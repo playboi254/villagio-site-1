@@ -19,13 +19,13 @@ import { Badge } from '@/components/ui/badge';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
 import CategoryCard from '@/components/categories/CategoryCard';
-import { products, categories, vendors } from '@/data/mockData';
+import { products, categories, vendors, heroSlides } from '@/data/mockData';
 
 // Hero images
 import heroSlide1 from '@/assets/hero-slide1.jpg';
-import heroSlide2 from '@/assets/hero-slide-2.jpg';
-import heroSlide3 from '@/assets/hero-slide-3.jpg';
-import heroSlide4 from '@/assets/hero-slide-4.jpg';
+import heroSlide2 from '@/assets/Slider/UKM.jpg';
+import heroSlide3 from '@/assets/Slider/Category Cereals.jpg';
+import heroSlide4 from '@/assets/Slider/1000024088.jpg';
 
 const heroImages = [heroSlide1, heroSlide2, heroSlide3, heroSlide4];
 
