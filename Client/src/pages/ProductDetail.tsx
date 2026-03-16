@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LazyImage from '@/components/ui/LazyImage';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
 import { useCart } from '@/contexts/CartContext';
@@ -30,11 +31,6 @@ const ProductDetail: React.FC = () => {
   const { addItem } = useCart();
   const { product, relatedProducts, isLoading, error } = useProduct(id);
 
-  const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return '/placeholder-product.jpg';
-    if (imagePath.startsWith('http') || imagePath.startsWith('/')) return imagePath;
-    return `http://localhost:8000/${imagePath}`;
-  };
 
   if (isLoading) {
     return (
@@ -100,8 +96,8 @@ const ProductDetail: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
             >
               <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted mb-4">
-                <img
-                  src={getImageUrl(product.images?.[selectedImage])}
+                <LazyImage
+                  src={product.images?.[selectedImage]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -125,8 +121,8 @@ const ProductDetail: React.FC = () => {
                           : 'border-transparent hover:border-border'
                       }`}
                     >
-                      <img
-                        src={getImageUrl(image)}
+                      <LazyImage
+                        src={image}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />

@@ -34,10 +34,9 @@ import {
 } from '@/components/ui/accordion';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useSearchProducts } from '@/hooks/useProducts';
 
 const Products: React.FC = () => {
-  const { products, isLoading } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('featured');
@@ -46,10 +45,20 @@ const Products: React.FC = () => {
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const searchQuery = searchParams.get('search') || '';
 
-  // Dynamically generate categories from products
+  // Get all products for filter generation (cached)
+  const { products: allProducts, isLoading: isAllLoading } = useProducts();
+  
+  // Advanced search with API
+  const { results: products, isLoading: isSearchLoading, error } = useSearchProducts({
+    category: selectedCategory,
+    search: searchQuery,
+    limit: 50
+  });
+
+  // Dynamically generate categories from all products
   const dynamicCategories = useMemo(() => {
     const cats: Record<string, number> = {};
-    products.forEach(p => {
+    allProducts.forEach(p => {
       cats[p.category] = (cats[p.category] || 0) + 1;
     });
     return Object.entries(cats).map(([name, count]) => ({
@@ -57,52 +66,45 @@ const Products: React.FC = () => {
       slug: name,
       productCount: count
     }));
-  }, [products]);
+  }, [allProducts]);
 
-  // Dynamically generate vendors (farmers) from products
+  // Dynamically generate vendors (farmers) from all products
   const dynamicVendors = useMemo(() => {
     const vendorsSet = new Set<string>();
-    products.forEach(p => {
+    allProducts.forEach(p => {
       if (p.farmer?.name) vendorsSet.add(p.farmer.name);
     });
     return Array.from(vendorsSet).map(name => ({ id: name, name }));
-  }, [products]);
+  }, [allProducts]);
 
-  // Filter products
-  const filteredProducts = products.filter((product) => {
-    // Category filter: case-insensitive
-    if (selectedCategory && selectedCategory !== 'all') {
-      const catMatch = product.category.toLowerCase() === selectedCategory.toLowerCase();
-      if (!catMatch) return false;
-    }
-    
-    // Vendor filter
-    if (selectedVendors.length > 0) {
+  // Client-side vendor filtering (since search API might not handle vendor array yet)
+  const filteredProducts = useMemo(() => {
+    if (selectedVendors.length === 0) return products;
+    return products.filter((product) => {
       const vendorName = product.farmer?.name;
-      if (!vendorName || !selectedVendors.includes(vendorName)) return false;
-    }
+      return vendorName && selectedVendors.includes(vendorName);
+    });
+  }, [products, selectedVendors]);
 
-    // Search query
-    if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    
-    return true;
-  });
-
-  // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
-      case 'newest':
-        return new Date((b as any).createdAt || 0).getTime() - new Date((a as any).createdAt || 0).getTime();
-      default:
-        return 0;
-    }
-  });
+  // Robust sorting
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'rating': // "Popularity" by rating
+          return (b.rating || 0) - (a.rating || 0);
+        case 'popularity': // Popularity by reviews
+          return (b.reviewCount || 0) - (a.reviewCount || 0);
+        case 'newest':
+          return new Date((b as any).createdAt || 0).getTime() - new Date((a as any).createdAt || 0).getTime();
+        default:
+          return b.featured ? 1 : -1;
+      }
+    });
+  }, [filteredProducts, sortBy]);
 
   const clearFilters = () => {
     setSearchParams({});
@@ -115,12 +117,30 @@ const Products: React.FC = () => {
     );
   };
 
-  if (isLoading) {
+  if (isAllLoading || isSearchLoading) {
     return (
       <MainLayout>
-        <div className="py-20 text-center text-muted-foreground">
-          <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
-          Loading products...
+        <div className="py-20 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">Loading Freshness...</h2>
+          <p className="max-w-xs mx-auto mt-2 text-sm italic">Connecting with local farmers to bring you the best produce.</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="py-20 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+             <X className="h-8 w-8" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
+          <p className="max-w-xs mx-auto mt-2 text-sm">{error}</p>
+          <Button variant="outline" className="mt-6" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
         </div>
       </MainLayout>
     );
@@ -299,7 +319,8 @@ const Products: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-card">
                       <SelectItem value="featured">Featured</SelectItem>
-                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="popularity">Most Popular</SelectItem>
+                      <SelectItem value="newest">Newest Arrivals</SelectItem>
                       <SelectItem value="price-low">Price: Low to High</SelectItem>
                       <SelectItem value="price-high">Price: High to Low</SelectItem>
                       <SelectItem value="rating">Top Rated</SelectItem>

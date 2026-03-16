@@ -36,14 +36,36 @@ const Checkout: React.FC = () => {
   });
   const [paymentMethod, setPaymentMethod] = useState('mpesa');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
+
+  const fetchDeliveryEstimate = async (county: string) => {
+    try {
+      // Find zone for the county
+      const zonesRes = await api.get('/logistics/zones');
+      const zone = zonesRes.data.find((z: any) => z.name.toLowerCase().includes(county.toLowerCase()));
+      if (zone) {
+        const estRes = await api.get(`/logistics/zones/${zone._id}/estimate`);
+        setDeliveryEstimate(estRes.data.estimate);
+      } else {
+        setDeliveryEstimate("Same-day Delivery");
+      }
+    } catch {
+      setDeliveryEstimate("Expected within 24h");
+    }
+  };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDeliveryAddress({ ...deliveryAddress, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setDeliveryAddress({ ...deliveryAddress, [name]: value });
+    if (name === 'county' && value.length > 3) {
+      fetchDeliveryEstimate(value);
+    }
   };
 
   const handleSubmitAddress = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(2);
+    window.scrollTo(0, 0);
   };
 
   const handlePlaceOrder = async () => {
@@ -68,7 +90,7 @@ const Checkout: React.FC = () => {
       };
 
       const response = await api.post('/orders', orderData);
-      const savedOrder = response.data;
+      const savedOrder = response.data.data || response.data;
 
       if (paymentMethod === 'mpesa') {
         try {
@@ -81,8 +103,7 @@ const Checkout: React.FC = () => {
             title: 'M-Pesa STK Push Sent',
             description: 'Please check your phone and enter your PIN to complete the payment.',
           });
-          // Wait a bit for the simulated callback to complete in backend
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         } catch (payErr) {
           console.error("Payment trigger failed:", payErr);
         }
@@ -90,12 +111,12 @@ const Checkout: React.FC = () => {
       
       clearCart();
       toast({ 
-        title: 'Order Placed Successfully!', 
-        description: `Your order #${savedOrder._id.slice(-6).toUpperCase()} has been confirmed.` 
+        title: 'Order Placed!', 
+        description: `Order #${savedOrder._id.slice(-6).toUpperCase()} confirmed.` 
       });
 
-      // Trigger WhatsApp Notification
-      const waMessage = `Halo Villagio, a new order #${savedOrder._id.slice(-6).toUpperCase()} has been placed by ${deliveryAddress.firstName} ${deliveryAddress.lastName}. Total: KSh ${total.toLocaleString()}. Method: ${paymentMethod.toUpperCase()}.`;
+      // Trigger WhatsApp
+      const waMessage = `Villagio Order #${savedOrder._id.slice(-6).toUpperCase()} placed by ${deliveryAddress.firstName}. Total: KSh ${total.toLocaleString()}.`;
       const waUrl = `https://wa.me/254115566775?text=${encodeURIComponent(waMessage)}`;
       window.open(waUrl, '_blank');
       
@@ -103,7 +124,7 @@ const Checkout: React.FC = () => {
     } catch (error: any) {
       toast({
         title: 'Order Failed',
-        description: error.response?.data?.message || 'There was an error placing your order. Please try again.',
+        description: error.response?.data?.message || 'Failed to place order. Try again.',
         variant: 'destructive'
       });
     } finally {
@@ -441,20 +462,30 @@ const Checkout: React.FC = () => {
                 
                 <Separator className="my-4" />
                 
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">KSh {total.toLocaleString()}</span>
-                </div>
-                
-                <div className="mt-6 p-4 bg-leaf-light rounded-xl">
-                  <div className="flex items-center gap-2 text-primary">
-                    <ShieldCheck className="h-5 w-5" />
-                    <span className="text-sm font-medium">Secure Checkout</span>
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span className="text-primary text-xl">KSh {total.toLocaleString()}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your payment information is encrypted and secure
-                  </p>
-                </div>
+
+                  {deliveryEstimate && (
+                    <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-3">
+                      <Truck className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-semibold">Estimated Delivery</p>
+                        <p className="text-sm font-bold text-foreground">{deliveryEstimate}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 p-4 bg-leaf-light rounded-xl">
+                    <div className="flex items-center gap-2 text-primary">
+                      <ShieldCheck className="h-5 w-5" />
+                      <span className="text-sm font-medium">Verified Payment</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Villagio uses end-to-end encryption for security.
+                    </p>
+                  </div>
               </div>
             </div>
           </div>

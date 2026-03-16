@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const helmet = require('helmet')
 const mongoSanitize = require('express-mongo-sanitize')
+const compression = require('compression')
 
 // Import Central Configuration
 const config = require('./src/config/index')
@@ -12,6 +13,7 @@ const app = express()
 
 // ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
 app.use(helmet())
+app.use(compression())
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsOptions = {

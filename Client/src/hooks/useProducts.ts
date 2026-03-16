@@ -66,3 +66,37 @@ export function useProduct(id: string | undefined) {
         error: productError ? (productError as any).response?.data?.message || 'Failed to fetch product details' : null 
     };
 }
+
+export function useSearchProducts(params: {
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+}) {
+    const { data, isLoading, error, refetch } = useQuery({
+        queryKey: ['products', 'search', params],
+        queryFn: async () => {
+            const queryParams = new URLSearchParams();
+            if (params.category && params.category !== 'all') queryParams.append('category', params.category);
+            if (params.minPrice) queryParams.append('minPrice', params.minPrice.toString());
+            if (params.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
+            if (params.search) queryParams.append('search', params.search);
+            if (params.page) queryParams.append('page', params.page.toString());
+            if (params.limit) queryParams.append('limit', params.limit.toString());
+
+            const response = await api.get(`/products/search?${queryParams.toString()}`);
+            return response.data;
+        },
+        enabled: true,
+    });
+
+    return { 
+        results: data?.results || [], 
+        pagination: data?.pagination || null,
+        isLoading, 
+        error: error ? (error as any).response?.data?.message || 'Search failed' : null, 
+        refetch 
+    };
+}

@@ -61,3 +61,18 @@ exports.getLogisticsStats = async () => {
         pendingAssignment
     };
 };
+
+exports.calculateDeliveryEstimate = async (zoneId) => {
+    const zone = await DeliveryZone.findById(zoneId);
+    if (!zone) return "Scheduled Delivery";
+
+    // Basic logic: 60 mins base + zone complexity
+    // In a real app, this would use Google Maps Distance Matrix API
+    const baseTime = 45; 
+    const trafficDelay = 15;
+    const zoneAdjustment = zone.deliveryFee > 300 ? 30 : 0; 
+
+    const totalMinutes = baseTime + trafficDelay + zoneAdjustment;
+    
+    return `${totalMinutes} - ${totalMinutes + 20} mins`;
+};

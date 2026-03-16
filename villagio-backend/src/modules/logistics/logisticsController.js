@@ -67,3 +67,16 @@ exports.getDashboardStats = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.getDeliveryEstimate = async (req, res, next) => {
+    try {
+        const estimate = await logisticsService.calculateDeliveryEstimate(req.params.id);
+        res.status(200).json({
+            success: true,
+            message: 'Delivery estimate retrieved',
+            data: { estimate }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

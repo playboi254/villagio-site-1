@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import LazyImage from '@/components/ui/LazyImage';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -34,11 +35,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
     ? Math.round((1 - product.price / product.originalPrice) * 100) 
     : 0;
 
-  const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return '/placeholder-product.jpg';
-    if (imagePath.startsWith('http') || imagePath.startsWith('/')) return imagePath;
-    return `http://localhost:8000/${imagePath}`;
-  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,8 +68,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
         <div className="bg-card rounded-xl overflow-hidden shadow-card hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-muted">
-            <img
-              src={getImageUrl(product.images?.[0])}
+            <LazyImage
+              src={product.images?.[0]}
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
