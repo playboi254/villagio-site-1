@@ -82,13 +82,13 @@ define(['./workbox-438b26d2'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.019d1v5328g"
+    "revision": "0.7anet2bas6o"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/products/, new workbox.StaleWhileRevalidate({
+  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/v1\/products/, new workbox.StaleWhileRevalidate({
     "cacheName": "products-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 100,
@@ -102,13 +102,13 @@ define(['./workbox-438b26d2'], (function (workbox) { 'use strict';
       maxAgeSeconds: 604800
     })]
   }), 'GET');
-  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/orders/, new workbox.NetworkFirst({
+  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/v1\/orders/, new workbox.NetworkFirst({
     "cacheName": "orders-cache",
     plugins: [new workbox.BackgroundSyncPlugin("orders-sync-queue", {
       maxRetentionTime: 1440
     })]
   }), 'GET');
-  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/dashboard/, new workbox.NetworkFirst({
+  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/v1\/dashboard/, new workbox.NetworkFirst({
     "cacheName": "dashboard-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 10,

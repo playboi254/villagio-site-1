@@ -22,7 +22,7 @@ export const usePromotions = () => {
     queryKey: ['promotions'],
     queryFn: async () => {
       const res = await axios.get(`${API_URL}/promotions`);
-      return res.data;
+      return res.data.data.promotions || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

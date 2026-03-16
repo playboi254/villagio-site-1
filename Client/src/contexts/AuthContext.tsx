@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const token = localStorage.getItem('auth_token');
     if (token) {
       api.get('/auth/profile')
-        .then(res => setUser(res.data.user))
+        .then(res => setUser(res.data.data.user))
         .catch(() => localStorage.removeItem('auth_token'))
         .finally(() => setIsLoading(false));
     } else {
@@ -44,9 +44,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const res = await api.post('/auth/login', { email, password });
-      localStorage.setItem('auth_token', res.data.token);
-      setUser(res.data.user);
-      return res.data.user;
+      const { token, user } = res.data.data;
+      localStorage.setItem('auth_token', token);
+      setUser(user);
+      return user;
     } catch (error) {
       throw error;
     } finally {
@@ -67,11 +68,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: data.name,
         email: data.email,
         password: data.password,
-        // ✅ FIX: was hardcoded 'customer' — now uses passed value, defaults to 'customer'
         userType: data.userType || 'customer',
       });
-      localStorage.setItem('auth_token', res.data.token);
-      setUser(res.data.user);
+      const { token, user } = res.data.data;
+      localStorage.setItem('auth_token', token);
+      setUser(user);
     } catch (error) {
       throw error;
     } finally {
@@ -86,7 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
     const res = await api.put('/users/profile', data);
-    setUser(prev => prev ? { ...prev, ...res.data.user } : null);
+    setUser(prev => prev ? { ...prev, ...res.data.data.user } : null);
   }, []);
 
   const updateAvatar = useCallback(async (file: File): Promise<string> => {

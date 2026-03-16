@@ -4,6 +4,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { RecentOrders } from "@/components/dashboard/RecentOrders";
 import { TopVendors } from "@/components/dashboard/TopVendors";
+import { LowStockAlerts } from "@/components/dashboard/LowStockAlerts";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Dashboard() {
@@ -60,7 +61,8 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <SalesChart data={data?.monthlyTrend || []} isLoading={isLoading} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
+          <LowStockAlerts products={data?.lowStockProducts || []} isLoading={isLoading} />
           <TopVendors />
         </div>
       </div>

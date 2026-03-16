@@ -11,6 +11,7 @@ export interface DashboardData {
     totalRevenue: number;
     recentOrders: any[];
     monthlyTrend: any[];
+    lowStockProducts: any[];
 }
 
 export function useDashboardData() {

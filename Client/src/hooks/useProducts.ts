@@ -21,17 +21,17 @@ export interface Product {
 }
 
 export function useProducts() {
-    const { data: products = [], isLoading, error, refetch } = useQuery({
+    const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['products'],
         queryFn: async () => {
             const response = await api.get('/products');
-            return response.data;
+            return response.data.data.products;
         },
         refetchInterval: 10000, // Poll every 10s for sync
     });
 
     return { 
-        products, 
+        products: data || [], 
         isLoading, 
         error: error ? (error as any).response?.data?.message || 'Failed to fetch products' : null, 
         refetch 
@@ -39,28 +39,30 @@ export function useProducts() {
 }
 
 export function useProduct(id: string | undefined) {
-    const { data: product = null, isLoading: isProductLoading, error: productError } = useQuery({
+    const { data: productData, isLoading: isProductLoading, error: productError } = useQuery({
         queryKey: ['product', id],
         queryFn: async () => {
             if (!id) return null;
             const response = await api.get(`/products/${id}`);
-            return response.data;
+            return response.data.data.product;
         },
         enabled: !!id,
     });
 
     const { data: relatedProducts = [], isLoading: isRelatedLoading } = useQuery({
-        queryKey: ['products', 'related', product?.category],
+        queryKey: ['products', 'related', productData?.category],
         queryFn: async () => {
-            if (!product?.category) return [];
-            const response = await api.get(`/products?category=${product.category}`);
-            return response.data.filter((p: Product) => p._id !== id).slice(0, 4);
+            if (!productData?.category) return [];
+            const response = await api.get(`/products?category=${productData.category}`);
+            // Note: /products returns { success, data: { products: [] } }
+            const productsArray = response.data.data.products || [];
+            return productsArray.filter((p: Product) => p._id !== id).slice(0, 4);
         },
-        enabled: !!product?.category,
+        enabled: !!productData?.category,
     });
 
     return { 
-        product, 
+        product: productData || null, 
         relatedProducts, 
         isLoading: isProductLoading || isRelatedLoading, 
         error: productError ? (productError as any).response?.data?.message || 'Failed to fetch product details' : null 
@@ -87,7 +89,7 @@ export function useSearchProducts(params: {
             if (params.limit) queryParams.append('limit', params.limit.toString());
 
             const response = await api.get(`/products/search?${queryParams.toString()}`);
-            return response.data;
+            return response.data.data; // Returns { results, pagination }
         },
         enabled: true,
     });

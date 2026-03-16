@@ -54,6 +54,11 @@ exports.getAdminDashboardStats = async () => {
         { $sort: { "_id.year": 1, "_id.month": 1 } }
     ])
 
+    const lowStockProducts = await Product.find({ stock: { $lte: 10 } })
+        .select('name stock price')
+        .sort({ stock: 1 })
+        .limit(10)
+
     return {
         totalUsersByRole,
         totalFarmers,
@@ -63,7 +68,8 @@ exports.getAdminDashboardStats = async () => {
         totalOrders,
         totalRevenue,
         recentOrders,
-        monthlyTrend
+        monthlyTrend,
+        lowStockProducts
     }
 }
 

@@ -25,10 +25,10 @@ export const useVendors = () => {
         api.get('/products')
       ]);
 
-      const profiles = profilesRes.data;
-      const products = productsRes.data;
+      const profiles = profilesRes.data.data.profiles || [];
+      const products = productsRes.data.data.products || [];
 
-      return profiles.map((p: any) => {
+      return (profiles || []).map((p: any) => {
         const farmerProducts = products.filter((prod: any) => {
           const farmerId = prod.farmer?._id || prod.farmer;
           return farmerId === p.farmer?._id;
