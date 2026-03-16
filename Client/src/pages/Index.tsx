@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -19,7 +19,10 @@ import { Badge } from '@/components/ui/badge';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
 import CategoryCard from '@/components/categories/CategoryCard';
-import { products, categories, vendors, heroSlides } from '@/data/mockData';
+import { useProducts } from '@/hooks/useProducts';
+import { useVendors } from '@/hooks/useVendors';
+import { usePromotions } from '@/hooks/usePromotions';
+import { categories as mockCategories } from '@/data/mockData';
 
 // Hero images
 import heroSlide1 from '@/assets/hero-slide1.jpg';
@@ -30,9 +33,10 @@ import heroSlide4 from '@/assets/Slider/1000024088.jpg';
 const heroImages = [heroSlide1, heroSlide2, heroSlide3, heroSlide4];
 
 const Index: React.FC = () => {
+  const { products: productsData, isLoading } = useProducts();
+  const { vendors: vendorsData, isLoading: isVendorsLoading } = useVendors();
+  const { data: promotions } = usePromotions();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const featuredProducts = products.slice(0, 8);
-  const topVendors = vendors.slice(0, 4);
 
   // Auto-slide effect
   useEffect(() => {
@@ -41,6 +45,17 @@ const Index: React.FC = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Filter top vendors for display
+  const topVendors = vendorsData.slice(0, 4);
+
+  // Dynamically calculate category counts and combine with mock data for images
+  const liveCategories = useMemo(() => {
+    return mockCategories.map(cat => {
+      const count = productsData.filter(p => p.category.toLowerCase() === cat.slug.toLowerCase()).length;
+      return { ...cat, productCount: count || cat.productCount };
+    });
+  }, [productsData]);
 
   const features = [
     {
@@ -106,11 +121,11 @@ const Index: React.FC = () => {
               {/* Stats */}
               <div className="flex flex-wrap gap-6 lg:gap-8">
                 <div>
-                  <div className="text-3xl font-bold text-secondary">500+</div>
+                  <div className="text-3xl font-bold text-secondary">{productsData.length > 50 ? productsData.length : '50+'}</div>
                   <div className="text-sm text-primary-foreground/70">Products</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-secondary">87</div>
+                  <div className="text-3xl font-bold text-secondary">{vendorsData.length}</div>
                   <div className="text-sm text-primary-foreground/70">Vendors</div>
                 </div>
                 <div>
@@ -209,14 +224,14 @@ const Index: React.FC = () => {
               </p>
             </div>
             <Button variant="ghost" className="hidden md:flex text-secondary hover:text-secondary-light" asChild>
-              <Link to="/categories">
+              <Link to="/products">
                 View All <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {categories.map((category, index) => (
+            {liveCategories.map((category, index) => (
               <CategoryCard key={category.id} category={category} index={index} />
             ))}
           </div>
@@ -243,9 +258,18 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {featuredProducts.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
-            ))}
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="bg-card rounded-xl aspect-square animate-pulse" />
+              ))
+            ) : (
+              productsData
+                .filter(p => p.featured)
+                .slice(0, 8)
+                .map((product, index) => (
+                  <ProductCard key={product._id} product={product as any} index={index} />
+                ))
+            )}
           </div>
 
           <div className="flex justify-center mt-8 md:hidden">
@@ -259,27 +283,44 @@ const Index: React.FC = () => {
       {/* Special Offer Banner */}
       <section className="py-8">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="bg-secondary rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6"
-          >
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold text-secondary-foreground mb-2">
-                Special Offer: 20% OFF Your First Order!
-              </h2>
-              <p className="text-secondary-foreground/90 mb-2">
-                Use code <span className="font-bold bg-white/20 px-2 py-1 rounded">WELCOME20</span> at checkout
-              </p>
-              <p className="text-sm text-secondary-foreground/70">
-                Valid for new customers only. Minimum order KSh 1,000
-              </p>
-            </div>
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary-light shrink-0" asChild>
-              <Link to="/products">Shop Now</Link>
-            </Button>
-          </motion.div>
+          {promotions?.filter(p => p.status === 'active').slice(0,1).map(promo => (
+            <motion.div
+              key={promo._id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-secondary rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6"
+            >
+              <div className="text-center md:text-left">
+                <h2 className="text-2xl md:text-3xl font-bold text-secondary-foreground mb-2">
+                  Special Offer: {promo.name}!
+                </h2>
+                <p className="text-secondary-foreground/90 mb-2">
+                  Use code <span className="font-bold bg-white/20 px-2 py-1 rounded">{promo.code}</span> at checkout
+                </p>
+                <p className="text-sm text-secondary-foreground/70">
+                  {promo.type === 'percentage' ? `${promo.discount}% OFF` : promo.type === 'fixed' ? `KES ${promo.discount} OFF` : 'Free Shipping'} on orders above KES {promo.minOrder.toLocaleString()}
+                </p>
+              </div>
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary-light shrink-0" asChild>
+                <Link to="/products">Shop Now</Link>
+              </Button>
+            </motion.div>
+          ))}
+          {(!promotions || promotions.filter(p => p.status === 'active').length === 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-primary/10 border border-primary/20 rounded-2xl p-8 md:p-12 text-center"
+            >
+              <h2 className="text-2xl font-bold text-primary mb-2">Welcome to Villagio Farm Fresh!</h2>
+              <p className="text-muted-foreground mb-6">Quality organic products from local Kenyan farms.</p>
+              <Button size="lg" className="bg-primary hover:bg-primary-light" asChild>
+                <Link to="/products">Start Shopping</Link>
+              </Button>
+            </motion.div>
+          )}
         </div>
       </section>
 

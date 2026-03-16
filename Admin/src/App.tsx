@@ -1,3 +1,6 @@
+import { AdminAuthProvider } from "@/context/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoutes";
+import Login from "./pages/Login";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,27 +23,36 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <DashboardLayout>
+    <AdminAuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/vendors" element={<Vendors />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/delivery" element={<Delivery />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/promotions" element={<Promotions />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/vendors" element={<Vendors />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/delivery" element={<Delivery />} />
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/promotions" element={<Promotions />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </DashboardLayout>
+              </ProtectedRoute>
+            } />
           </Routes>
-        </DashboardLayout>
-      </BrowserRouter>
-    </TooltipProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AdminAuthProvider>
   </QueryClientProvider>
 );
 

@@ -21,25 +21,36 @@ import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
-import { products, vendors } from '@/data/mockData';
+import { useProduct } from '@/hooks/useProducts';
 
 const ProductDetail: React.FC = () => {
-  const { slug } = useParams();
+  const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const { addItem } = useCart();
+  const { product, relatedProducts, isLoading, error } = useProduct(id);
 
-  const product = products.find((p) => p.slug === slug);
-  const vendor = vendors.find((v) => v.id === product?.vendorId);
-  const relatedProducts = products
-    .filter((p) => p.category === product?.category && p.id !== product?.id)
-    .slice(0, 4);
+  const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return '/placeholder-product.jpg';
+    if (imagePath.startsWith('http') || imagePath.startsWith('/')) return imagePath;
+    return `http://localhost:8000/${imagePath}`;
+  };
 
-  if (!product) {
+  if (isLoading) {
     return (
       <MainLayout>
         <div className="container py-20 text-center">
-          <h1 className="font-display text-2xl font-bold mb-4">Product not found</h1>
+          <div className="animate-pulse text-muted-foreground">Loading product details...</div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <MainLayout>
+        <div className="container py-20 text-center">
+          <h1 className="font-display text-2xl font-bold mb-4">{error || 'Product not found'}</h1>
           <Button asChild>
             <Link to="/products">Back to Products</Link>
           </Button>
@@ -53,7 +64,7 @@ const ProductDetail: React.FC = () => {
     : 0;
 
   const handleAddToCart = () => {
-    addItem(product.id, quantity);
+    addItem(product as any, quantity);
     toast({
       title: 'Added to cart',
       description: `${quantity} x ${product.name} has been added to your cart.`,
@@ -64,7 +75,7 @@ const ProductDetail: React.FC = () => {
     <MainLayout>
       {/* Breadcrumb */}
       <div className="bg-muted/30 py-4">
-        <div className="container">
+        <div className="container px-4">
           <nav className="flex items-center gap-2 text-sm">
             <Link to="/" className="text-muted-foreground hover:text-foreground">
               Home
@@ -81,7 +92,7 @@ const ProductDetail: React.FC = () => {
 
       {/* Product Details */}
       <section className="py-8 md:py-12">
-        <div className="container">
+        <div className="container px-4">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Images */}
             <motion.div
@@ -90,7 +101,7 @@ const ProductDetail: React.FC = () => {
             >
               <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted mb-4">
                 <img
-                  src={product.images[selectedImage]}
+                  src={getImageUrl(product.images?.[selectedImage])}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -102,7 +113,7 @@ const ProductDetail: React.FC = () => {
               </div>
               
               {/* Thumbnail Gallery */}
-              {product.images.length > 1 && (
+              {product.images?.length > 1 && (
                 <div className="flex gap-3">
                   {product.images.map((image, index) => (
                     <button
@@ -115,7 +126,7 @@ const ProductDetail: React.FC = () => {
                       }`}
                     >
                       <img
-                        src={image}
+                        src={getImageUrl(image)}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
@@ -132,15 +143,14 @@ const ProductDetail: React.FC = () => {
               className="space-y-6"
             >
               {/* Vendor Link */}
-              {vendor && (
-                <Link 
-                  to={`/vendors/${vendor.slug}`}
-                  className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+              {product.farmer && (
+                <div 
+                  className="inline-flex items-center gap-2 text-sm text-muted-foreground"
                 >
                   <Store className="h-4 w-4" />
-                  {vendor.name}
-                  {vendor.verified && <BadgeCheck className="h-4 w-4 text-primary" />}
-                </Link>
+                  {product.farmer.name}
+                  <BadgeCheck className="h-4 w-4 text-primary" />
+                </div>
               )}
 
               {/* Title & Rating */}
@@ -151,27 +161,23 @@ const ProductDetail: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
                     <Star className="h-5 w-5 fill-orange text-orange" />
-                    <span className="font-medium">{product.rating}</span>
+                    <span className="font-medium">{product.rating || 5.0}</span>
                     <span className="text-muted-foreground">
-                      ({product.reviewCount} reviews)
+                      ({product.reviewCount || 0} reviews)
                     </span>
                   </div>
-                  <span className={`text-sm font-medium ${product.inStock ? 'text-primary' : 'text-destructive'}`}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  <span className={`text-sm font-medium ${product.stock > 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                   </span>
                 </div>
               </div>
 
-              {/* Tags */}
-              {product.tags && product.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="capitalize">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {/* Category Badge */}
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className="capitalize">
+                  {product.category}
+                </Badge>
+              </div>
 
               {/* Price */}
               <div className="flex items-baseline gap-3">
@@ -183,7 +189,7 @@ const ProductDetail: React.FC = () => {
                     KES {product.originalPrice.toLocaleString()}
                   </span>
                 )}
-                <span className="text-muted-foreground">{product.unit}</span>
+                <span className="text-muted-foreground">/{product.unit || 'unit'}</span>
               </div>
 
               {/* Description */}
@@ -215,7 +221,7 @@ const ProductDetail: React.FC = () => {
                   size="lg" 
                   className="flex-1 bg-primary hover:bg-primary-dark"
                   onClick={handleAddToCart}
-                  disabled={!product.inStock}
+                  disabled={product.stock === 0}
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Add to Cart
@@ -260,21 +266,15 @@ const ProductDetail: React.FC = () => {
                   Description
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="nutrition"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Nutrition
-                </TabsTrigger>
-                <TabsTrigger 
                   value="reviews"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                 >
-                  Reviews ({product.reviewCount})
+                  Reviews ({product.reviewCount || 0})
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="description" className="mt-6">
-                <div className="prose max-w-none">
+                <div className="prose max-w-none px-4">
                   <p className="text-muted-foreground leading-relaxed">
                     {product.description}
                   </p>
@@ -288,78 +288,27 @@ const ProductDetail: React.FC = () => {
                 </div>
               </TabsContent>
               
-              <TabsContent value="nutrition" className="mt-6">
-                {product.nutrition ? (
-                  <div className="max-w-md">
-                    <h4 className="font-display font-semibold text-foreground mb-4">
-                      Nutritional Information (per 100g)
-                    </h4>
-                    <div className="space-y-3">
-                      {Object.entries(product.nutrition).map(([key, value]) => (
-                        <div key={key} className="flex justify-between py-2 border-b">
-                          <span className="capitalize text-muted-foreground">{key}</span>
-                          <span className="font-medium">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Nutritional information not available for this product.
-                  </p>
-                )}
-              </TabsContent>
-              
               <TabsContent value="reviews" className="mt-6">
-                <div className="space-y-6">
-                  {/* Review Summary */}
+                <div className="space-y-6 px-4">
+                  {/* Review Summary Placeholder */}
                   <div className="flex items-center gap-6 p-6 bg-muted/50 rounded-xl">
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-foreground">{product.rating}</div>
+                      <div className="text-4xl font-bold text-foreground">{product.rating || 5.0}</div>
                       <div className="flex items-center gap-1 justify-center my-2">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star 
                             key={i} 
-                            className={`h-4 w-4 ${i < Math.floor(product.rating) ? 'fill-orange text-orange' : 'text-muted'}`}
+                            className={`h-4 w-4 ${(i < (product.rating || 5)) ? 'fill-orange text-orange' : 'text-muted'}`}
                           />
                         ))}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {product.reviewCount} reviews
+                        {product.reviewCount || 0} reviews
                       </div>
                     </div>
                     <div className="flex-1">
                       <Button>Write a Review</Button>
                     </div>
-                  </div>
-
-                  {/* Sample Reviews */}
-                  <div className="space-y-4">
-                    {[
-                      { name: 'Sarah M.', rating: 5, date: '2 days ago', comment: 'Absolutely fresh and delicious! Will order again.' },
-                      { name: 'John D.', rating: 4, date: '1 week ago', comment: 'Great quality, fast delivery. Slightly smaller than expected but taste is amazing.' },
-                    ].map((review, index) => (
-                      <div key={index} className="p-4 border rounded-xl">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                              {review.name.charAt(0)}
-                            </div>
-                            <span className="font-medium">{review.name}</span>
-                          </div>
-                          <span className="text-sm text-muted-foreground">{review.date}</span>
-                        </div>
-                        <div className="flex items-center gap-1 mb-2">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`h-3 w-3 ${i < review.rating ? 'fill-orange text-orange' : 'text-muted'}`}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-muted-foreground">{review.comment}</p>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </TabsContent>
@@ -371,13 +320,13 @@ const ProductDetail: React.FC = () => {
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section className="py-12 bg-muted/30">
-          <div className="container">
+          <div className="container px-4">
             <h2 className="font-display text-2xl font-bold text-foreground mb-8">
               You May Also Like
             </h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {relatedProducts.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
+              {relatedProducts.map((p, index) => (
+                <ProductCard key={p._id} product={p as any} index={index} />
               ))}
             </div>
           </div>

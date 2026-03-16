@@ -15,46 +15,37 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
-const revenueData = [
-  { month: "Jul", revenue: 1800000, orders: 420 },
-  { month: "Aug", revenue: 2100000, orders: 485 },
-  { month: "Sep", revenue: 1950000, orders: 452 },
-  { month: "Oct", revenue: 2400000, orders: 530 },
-  { month: "Nov", revenue: 2650000, orders: 590 },
-  { month: "Dec", revenue: 2900000, orders: 645 },
-];
-
-const categoryData = [
-  { name: "Vegetables", value: 35, color: "hsl(142, 76%, 36%)" },
-  { name: "Fruits", value: 25, color: "hsl(18, 100%, 61%)" },
-  { name: "Dairy", value: 20, color: "hsl(199, 89%, 48%)" },
-  { name: "Grains", value: 12, color: "hsl(38, 92%, 50%)" },
-  { name: "Others", value: 8, color: "hsl(156, 54%, 13%)" },
-];
-
-const vendorPerformance = [
-  { name: "Green Valley", orders: 342, revenue: 125 },
-  { name: "Sunrise Dairy", orders: 289, revenue: 98 },
-  { name: "Fresh Harvest", orders: 256, revenue: 87 },
-  { name: "Organic Roots", orders: 198, revenue: 76 },
-  { name: "Highland Grains", orders: 167, revenue: 54 },
-];
-
-const topProducts = [
-  { name: "Fresh Sukuma Wiki", sales: 1245, revenue: 62250 },
-  { name: "Organic Tomatoes", sales: 987, revenue: 118440 },
-  { name: "Fresh Milk (1L)", sales: 856, revenue: 55640 },
-  { name: "Farm Fresh Eggs", sales: 678, revenue: 305100 },
-  { name: "Sweet Mangoes", sales: 543, revenue: 43440 },
-];
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const colors = ["hsl(142, 76%, 36%)", "hsl(18, 100%, 61%)", "hsl(199, 89%, 48%)", "hsl(38, 92%, 50%)", "hsl(156, 54%, 13%)"];
 
 export default function Analytics() {
+  const { data, isLoading } = useAnalytics();
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">Loading analytics...</div>
+    );
+  }
+
+  const revenueData = data.monthlyTrend.map((item: any) => ({
+    month: monthNames[item._id.month - 1],
+    revenue: item.revenue,
+    orders: item.orders
+  }));
+
+  const categoryData = data.categoryStats.map((item: any, index: number) => ({
+    name: item._id,
+    value: item.count,
+    color: colors[index % colors.length]
+  }));
+
   const stats = [
-    { label: "Total Revenue", value: "KES 2.9M", change: 18, icon: DollarSign, color: "success" },
-    { label: "Total Orders", value: "1,284", change: 12, icon: ShoppingCart, color: "accent" },
-    { label: "New Customers", value: "234", change: 8, icon: Users, color: "info" },
-    { label: "Products Sold", value: "8,456", change: -3, icon: Package, color: "warning" },
+    { label: "Total Revenue", value: `KES ${data.totalRevenue?.toLocaleString()}`, change: 0, icon: DollarSign, color: "success" },
+    { label: "Total Orders", value: data.totalOrders?.toLocaleString(), change: 0, icon: ShoppingCart, color: "accent" },
+    { label: "Total Customers", value: data.totalConsumers?.toLocaleString(), change: 0, icon: Users, color: "info" },
+    { label: "Total Products", value: data.totalProducts?.toLocaleString(), change: 0, icon: Package, color: "warning" },
   ];
 
   return (
@@ -97,7 +88,7 @@ export default function Analytics() {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
+                <AreaChart data={revenueData.length > 0 ? revenueData : [{month: 'No Data', revenue: 0}]}>
                   <defs>
                     <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(18 100% 61%)" stopOpacity={0.3} />
@@ -106,7 +97,7 @@ export default function Analytics() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(156 15% 90%)" />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000000}M`} />
+                  <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${v / 1000}k` : v} />
                   <Tooltip />
                   <Area type="monotone" dataKey="revenue" stroke="hsl(18 100% 61%)" fill="url(#colorRev)" strokeWidth={2} />
                 </AreaChart>
@@ -118,14 +109,14 @@ export default function Analytics() {
         {/* Category Distribution */}
         <Card className="shadow-card border-0">
           <CardHeader>
-            <CardTitle>Sales by Category</CardTitle>
+            <CardTitle>Products by Category</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={categoryData.length > 0 ? categoryData : [{name: 'No Data', value: 1, color: '#ccc'}]}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -133,7 +124,7 @@ export default function Analytics() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {categoryData.map((entry, index) => (
+                    {categoryData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -148,44 +139,51 @@ export default function Analytics() {
 
       {/* Bottom Row */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Vendor Performance */}
-        <Card className="shadow-card border-0">
-          <CardHeader>
-            <CardTitle>Vendor Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={vendorPerformance} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(156 15% 90%)" />
-                  <XAxis type="number" axisLine={false} tickLine={false} />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} />
-                  <Tooltip />
-                  <Bar dataKey="orders" fill="hsl(156 54% 13%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Products */}
+        {/* Top Selling Products */}
         <Card className="shadow-card border-0">
           <CardHeader>
             <CardTitle>Top Selling Products</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topProducts.map((product, index) => (
-                <div key={product.name} className="flex items-center gap-4">
-                  <span className="font-bold text-muted-foreground w-6">{index + 1}</span>
-                  <div className="flex-1">
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{product.sales} units sold</p>
+              {data.topProducts.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground">No sales data available.</div>
+              ) : (
+                data.topProducts.map((product: any, index: number) => (
+                  <div key={product.name} className="flex items-center gap-4">
+                    <span className="font-bold text-muted-foreground w-6">{index + 1}</span>
+                    <div className="flex-1">
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-sm text-muted-foreground">{product.totalSold} units sold</p>
+                    </div>
+                    <p className="font-semibold text-accent">KES {product.revenue?.toLocaleString()}</p>
                   </div>
-                  <p className="font-semibold text-accent">KES {(product.revenue / 1000).toFixed(0)}K</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Vendor Stats Placeholder */}
+        <Card className="shadow-card border-0">
+          <CardHeader>
+            <CardTitle>Business Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+             <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+                    <span className="text-muted-foreground">Total Farmers</span>
+                    <span className="font-bold text-primary">{data.totalFarmers}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+                    <span className="text-muted-foreground">Total Vendors</span>
+                    <span className="font-bold text-accent">{data.totalVendors}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+                    <span className="text-muted-foreground">Inactive Products</span>
+                    <span className="font-bold text-destructive">{data.totalProducts > 0 ? 0 : 0}</span>
+                </div>
+             </div>
           </CardContent>
         </Card>
       </div>

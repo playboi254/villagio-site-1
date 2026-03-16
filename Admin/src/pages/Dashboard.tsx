@@ -4,8 +4,11 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { RecentOrders } from "@/components/dashboard/RecentOrders";
 import { TopVendors } from "@/components/dashboard/TopVendors";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Dashboard() {
+  const { data, isLoading } = useDashboardData();
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Header */}
@@ -24,29 +27,29 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Orders"
-          value="1,284"
-          change={{ value: 12, trend: "up" }}
+          value={isLoading ? "..." : data?.totalOrders || 0}
+          change={{ value: 0, trend: "up" }}
           icon={ShoppingCart}
           iconColor="accent"
         />
         <StatCard
           title="Active Vendors"
-          value="48"
-          change={{ value: 5, trend: "up" }}
+          value={isLoading ? "..." : data?.totalVendors || 0}
+          change={{ value: 0, trend: "up" }}
           icon={Store}
           iconColor="primary"
         />
         <StatCard
           title="Revenue"
-          value="KES 2.4M"
-          change={{ value: 18, trend: "up" }}
+          value={isLoading ? "..." : `KES ${data?.totalRevenue?.toLocaleString() || 0}`}
+          change={{ value: 0, trend: "up" }}
           icon={DollarSign}
           iconColor="success"
         />
         <StatCard
           title="Deliveries"
-          value="856"
-          change={{ value: 3, trend: "down" }}
+          value={isLoading ? "..." : data?.totalOrders || 0} // Placeholder for deliveries
+          change={{ value: 0, trend: "up" }}
           icon={Truck}
           iconColor="warning"
         />
@@ -55,7 +58,7 @@ export default function Dashboard() {
       {/* Charts and Tables */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <SalesChart />
+          <SalesChart data={data?.monthlyTrend || []} isLoading={isLoading} />
         </div>
         <div className="lg:col-span-1">
           <TopVendors />
@@ -63,7 +66,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Orders */}
-      <RecentOrders />
+      <RecentOrders orders={data?.recentOrders || []} isLoading={isLoading} />
 
       {/* Floating Action Button (Mobile) */}
       <div className="fixed bottom-6 right-6 lg:hidden">

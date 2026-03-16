@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Filter, 
-  SlidersHorizontal, 
   Grid3X3, 
   List,
-  ChevronDown,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,20 +34,57 @@ import {
 } from '@/components/ui/accordion';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
-import { products, categories, vendors } from '@/data/mockData';
+import { useProducts } from '@/hooks/useProducts';
 
 const Products: React.FC = () => {
+  const { products, isLoading } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('featured');
   
   const selectedCategory = searchParams.get('category') || '';
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const searchQuery = searchParams.get('search') || '';
+
+  // Dynamically generate categories from products
+  const dynamicCategories = useMemo(() => {
+    const cats: Record<string, number> = {};
+    products.forEach(p => {
+      cats[p.category] = (cats[p.category] || 0) + 1;
+    });
+    return Object.entries(cats).map(([name, count]) => ({
+      name,
+      slug: name,
+      productCount: count
+    }));
+  }, [products]);
+
+  // Dynamically generate vendors (farmers) from products
+  const dynamicVendors = useMemo(() => {
+    const vendorsSet = new Set<string>();
+    products.forEach(p => {
+      if (p.farmer?.name) vendorsSet.add(p.farmer.name);
+    });
+    return Array.from(vendorsSet).map(name => ({ id: name, name }));
+  }, [products]);
 
   // Filter products
   const filteredProducts = products.filter((product) => {
-    if (selectedCategory && product.category !== selectedCategory) return false;
+    // Category filter: case-insensitive
+    if (selectedCategory && selectedCategory !== 'all') {
+      const catMatch = product.category.toLowerCase() === selectedCategory.toLowerCase();
+      if (!catMatch) return false;
+    }
+    
+    // Vendor filter
+    if (selectedVendors.length > 0) {
+      const vendorName = product.farmer?.name;
+      if (!vendorName || !selectedVendors.includes(vendorName)) return false;
+    }
+
+    // Search query
     if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    
     return true;
   });
 
@@ -60,9 +96,9 @@ const Products: React.FC = () => {
       case 'price-high':
         return b.price - a.price;
       case 'rating':
-        return b.rating - a.rating;
+        return (b.rating || 0) - (a.rating || 0);
       case 'newest':
-        return 0; // Would use createdAt in real implementation
+        return new Date((b as any).createdAt || 0).getTime() - new Date((a as any).createdAt || 0).getTime();
       default:
         return 0;
     }
@@ -70,7 +106,25 @@ const Products: React.FC = () => {
 
   const clearFilters = () => {
     setSearchParams({});
+    setSelectedVendors([]);
   };
+
+  const toggleVendor = (name: string) => {
+    setSelectedVendors(prev => 
+      prev.includes(name) ? prev.filter(v => v !== name) : [...prev, name]
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="py-20 text-center text-muted-foreground">
+          <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
+          Loading products...
+        </div>
+      </MainLayout>
+    );
+  }
 
   const FilterSection = () => (
     <div className="space-y-6">
@@ -82,13 +136,20 @@ const Products: React.FC = () => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3">
-              {categories.map((category) => (
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox
+                  checked={!selectedCategory || selectedCategory === 'all'}
+                  onCheckedChange={() => setSearchParams({})}
+                />
+                <span className="text-sm">All Categories</span>
+              </label>
+              {dynamicCategories.map((category) => (
                 <label
-                  key={category.id}
+                  key={category.slug}
                   className="flex items-center gap-3 cursor-pointer"
                 >
                   <Checkbox
-                    checked={selectedCategory === category.slug}
+                    checked={selectedCategory.toLowerCase() === category.slug.toLowerCase()}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSearchParams({ ...Object.fromEntries(searchParams), category: category.slug });
@@ -116,15 +177,19 @@ const Products: React.FC = () => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3">
-              {vendors.map((vendor) => (
+              {dynamicVendors.map((vendor) => (
                 <label
                   key={vendor.id}
                   className="flex items-center gap-3 cursor-pointer"
                 >
-                  <Checkbox />
+                  <Checkbox 
+                    checked={selectedVendors.includes(vendor.name)}
+                    onCheckedChange={() => toggleVendor(vendor.name)}
+                  />
                   <span className="text-sm">{vendor.name}</span>
                 </label>
               ))}
+              {dynamicVendors.length === 0 && <p className="text-xs text-muted-foreground">No vendors found</p>}
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -141,56 +206,13 @@ const Products: React.FC = () => {
                 <span className="text-muted-foreground self-center">-</span>
                 <Input placeholder="Max" type="number" className="h-9" />
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-                  Under KES 100
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-                  KES 100 - 500
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-                  KES 500 - 1,000
-                </Badge>
-                <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-                  KES 1,000+
-                </Badge>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Tags */}
-        <AccordionItem value="tags">
-          <AccordionTrigger className="font-display font-semibold">
-            Tags
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Organic
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Local
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Seasonal
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Fresh
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Free-Range
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-leaf-light hover:text-primary hover:border-primary">
-                Grass-Fed
-              </Badge>
             </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
 
       {/* Clear Filters */}
-      {(selectedCategory || searchQuery) && (
+      {(selectedCategory || searchQuery || selectedVendors.length > 0) && (
         <Button variant="outline" className="w-full" onClick={clearFilters}>
           <X className="h-4 w-4 mr-2" />
           Clear All Filters
@@ -203,16 +225,13 @@ const Products: React.FC = () => {
     <MainLayout>
       {/* Hero */}
       <section className="bg-muted/50 py-12">
-        <div className="container">
+        <div className="container px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              {selectedCategory 
-                ? categories.find(c => c.slug === selectedCategory)?.name || 'Products'
-                : 'All Products'
-              }
+              {selectedCategory || 'All Products'}
             </h1>
             <p className="text-muted-foreground">
               {sortedProducts.length} products available
@@ -222,7 +241,7 @@ const Products: React.FC = () => {
       </section>
 
       <section className="py-8">
-        <div className="container">
+        <div className="container px-4">
           <div className="flex gap-8">
             {/* Sidebar - Desktop */}
             <aside className="hidden lg:block w-64 shrink-0">
@@ -257,7 +276,7 @@ const Products: React.FC = () => {
                   {/* Active Filters */}
                   {selectedCategory && (
                     <Badge variant="secondary" className="gap-1">
-                      {categories.find(c => c.slug === selectedCategory)?.name}
+                      {selectedCategory}
                       <button
                         onClick={() => {
                           const params = Object.fromEntries(searchParams);
@@ -317,7 +336,7 @@ const Products: React.FC = () => {
                     : 'grid-cols-1'
                 }`}>
                   {sortedProducts.map((product, index) => (
-                    <ProductCard key={product.id} product={product} index={index} />
+                    <ProductCard key={product._id} product={product as any} index={index} />
                   ))}
                 </div>
               ) : (
@@ -333,20 +352,11 @@ const Products: React.FC = () => {
                 </div>
               )}
 
-              {/* Pagination */}
+              {/* Pagination Placeholder */}
               {sortedProducts.length > 0 && (
                 <div className="flex justify-center gap-2 mt-12">
-                  <Button variant="outline" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" className="bg-primary text-primary-foreground">
-                    1
-                  </Button>
-                  <Button variant="outline">2</Button>
-                  <Button variant="outline">3</Button>
-                  <Button variant="outline">
-                    Next
-                  </Button>
+                   {/* Simplified pagination for now */}
+                   <Button variant="outline" disabled>1</Button>
                 </div>
               )}
             </div>

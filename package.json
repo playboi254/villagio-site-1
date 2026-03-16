@@ -1,0 +1,16 @@
+{
+  "name": "villagio-farm",
+  "version": "1.0.0",
+  "description": "Villagio Farm - Full Stack Application",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd villagio-backend && npm run dev",
+    "client": "cd Client && npm run dev",
+    "install-all": "npm install && cd villagio-backend && npm install && cd ../Client && npm install",
+    "build": "cd Client && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}

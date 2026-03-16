@@ -31,23 +31,32 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
       return;
     }
-    
+
     if (!agreeTerms) {
       toast({ title: 'Error', description: 'Please agree to the terms and conditions', variant: 'destructive' });
       return;
     }
 
     try {
-      await register(formData);
+      await register({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+      });
       toast({ title: 'Welcome!', description: 'Your account has been created successfully.' });
       navigate('/');
-    } catch {
-      toast({ title: 'Error', description: 'Registration failed. Please try again.', variant: 'destructive' });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.response?.data?.message || 'Registration failed. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -60,19 +69,15 @@ const Register: React.FC = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-4xl flex rounded-3xl overflow-hidden shadow-2xl"
-          style={{ 
+          style={{
             background: 'rgba(255, 255, 255, 0.08)',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
           {/* Left Side - Image */}
           <div className="hidden lg:block lg:w-1/2 relative">
-            <img 
-              src={heroImage} 
-              alt="Fresh produce" 
-              className="w-full h-full object-cover"
-            />
+            <img src={heroImage} alt="Fresh produce" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
               <img src={villagioLogo} alt="Villagio" className="h-14 mb-4 brightness-0 invert" />
@@ -89,6 +94,7 @@ const Register: React.FC = () => {
               <p className="text-center text-white/60 mb-6">Join Villagio for fresh groceries</p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name Row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="firstName" className="text-white/80 text-sm mb-1.5 block">First Name</Label>
@@ -119,6 +125,7 @@ const Register: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Email */}
                 <div>
                   <Label htmlFor="email" className="text-white/80 text-sm mb-1.5 block">Email Address</Label>
                   <div className="relative">
@@ -136,6 +143,7 @@ const Register: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Phone */}
                 <div>
                   <Label htmlFor="phone" className="text-white/80 text-sm mb-1.5 block">Phone Number</Label>
                   <div className="relative">
@@ -148,11 +156,11 @@ const Register: React.FC = () => {
                       className="pl-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-xl focus:bg-white/15 focus:border-white/30"
                       value={formData.phone}
                       onChange={handleChange}
-                      required
                     />
                   </div>
                 </div>
 
+                {/* Password */}
                 <div>
                   <Label htmlFor="password" className="text-white/80 text-sm mb-1.5 block">Password</Label>
                   <div className="relative">
@@ -177,6 +185,7 @@ const Register: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Confirm Password */}
                 <div>
                   <Label htmlFor="confirmPassword" className="text-white/80 text-sm mb-1.5 block">Confirm Password</Label>
                   <div className="relative">
@@ -194,6 +203,7 @@ const Register: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Terms */}
                 <label className="flex items-start gap-2 cursor-pointer pt-2">
                   <Checkbox
                     checked={agreeTerms}
@@ -208,6 +218,7 @@ const Register: React.FC = () => {
                   </span>
                 </label>
 
+                {/* Submit */}
                 <Button
                   type="submit"
                   className="w-full h-11 bg-secondary hover:bg-secondary-light text-secondary-foreground rounded-xl font-semibold"
@@ -216,15 +227,19 @@ const Register: React.FC = () => {
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
 
+                {/* Divider */}
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/20" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="px-4 text-sm text-white/50" style={{ backgroundColor: 'hsl(152, 45%, 14%)' }}>or continue with</span>
+                    <span className="px-4 text-sm text-white/50" style={{ backgroundColor: 'hsl(152, 45%, 14%)' }}>
+                      or continue with
+                    </span>
                   </div>
                 </div>
 
+                {/* Google */}
                 <Button
                   type="button"
                   variant="outline"

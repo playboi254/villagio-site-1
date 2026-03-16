@@ -1,15 +1,17 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { products } from '@/data/mockData';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { Product } from '@/hooks/useProducts';
+
+const CART_STORAGE_KEY = 'villagio_cart_v1';
 
 export interface CartItem {
   productId: string;
-  product: typeof products[0];
+  product: Product;
   quantity: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (productId: string, quantity?: number) => void;
+  addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -21,22 +23,47 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+/** Load cart from localStorage */
+const loadCartFromStorage = (): CartItem[] => {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
-  const addItem = useCallback((productId: string, quantity = 1) => {
+/** Save cart to localStorage */
+const saveCartToStorage = (items: CartItem[]) => {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // Storage might be full; ignore silently
+  }
+};
+
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // ✅ Initialise from localStorage so cart persists across reloads
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
+
+  // ✅ Sync every change to localStorage
+  useEffect(() => {
+    saveCartToStorage(items);
+  }, [items]);
+
+  const addItem = useCallback((product: Product, quantity = 1) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.productId === productId);
+      const existing = prev.find((item) => item.productId === product._id);
       if (existing) {
         return prev.map((item) =>
-          item.productId === productId
+          item.productId === product._id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      const product = products.find((p) => p.id === productId);
-      if (!product) return prev;
-      return [...prev, { productId, product, quantity }];
+      return [...prev, { productId: product._id, product, quantity }];
     });
   }, []);
 
@@ -58,26 +85,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearCart = useCallback(() => {
     setItems([]);
+    localStorage.removeItem(CART_STORAGE_KEY);
   }, []);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const deliveryFee = subtotal >= 50 ? 0 : 4.99;
+  // Kenyan localized shipping: Free over KES 2000, else KES 200
+  const deliveryFee = subtotal >= 2000 || subtotal === 0 ? 0 : 200;
   const total = subtotal + deliveryFee;
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        itemCount,
-        subtotal,
-        deliveryFee,
-        total,
-      }}
+      value={{ items, addItem, removeItem, updateQuantity, clearCart, itemCount, subtotal, deliveryFee, total }}
     >
       {children}
     </CartContext.Provider>

@@ -5,14 +5,17 @@ import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/products/ProductCard';
-import { products } from '@/data/mockData';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useProducts } from '@/hooks/useProducts';
 
 const Wishlist: React.FC = () => {
-  // Mock wishlist items - in a real app, this would come from context/state
-  const [wishlistItems, setWishlistItems] = useState(products.slice(0, 4));
+  const { wishlist, toggleWishlist } = useWishlist();
+  const { products, isLoading } = useProducts();
+
+  const wishlistItems = products.filter(p => wishlist.includes(p._id));
 
   const removeFromWishlist = (productId: string) => {
-    setWishlistItems(wishlistItems.filter(item => item.id !== productId));
+    toggleWishlist(productId);
   };
 
   return (
@@ -47,13 +50,13 @@ const Wishlist: React.FC = () => {
           {wishlistItems.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {wishlistItems.map((product, index) => (
-                <div key={product.id} className="relative group">
-                  <ProductCard product={product} index={index} />
+                <div key={product._id} className="relative group">
+                  <ProductCard product={product as any} index={index} />
                   <Button
                     size="icon"
                     variant="destructive"
                     className="absolute top-3 right-3 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    onClick={() => removeFromWishlist(product.id)}
+                    onClick={() => removeFromWishlist(product._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

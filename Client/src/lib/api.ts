@@ -1,37 +1,28 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
-// Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+// ✅ FIXED: was localhost:3001 — your backend runs on 8000
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-// Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor for auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// ✅ Type-safe — no more AxiosRequestHeaders error
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
-);
+  return config;
+});
 
-// Response interceptor for error handling
+// ✅ Type-safe — no more 'any' error
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized - clear token and redirect to login
+  (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       window.location.href = '/login';
     }
@@ -41,9 +32,7 @@ api.interceptors.response.use(
 
 export default api;
 
-// API Endpoints (to be connected to backend)
 export const API_ENDPOINTS = {
-  // Auth
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
@@ -51,7 +40,6 @@ export const API_ENDPOINTS = {
     REFRESH: '/auth/refresh',
     PROFILE: '/auth/profile',
   },
-  // Products
   PRODUCTS: {
     LIST: '/products',
     DETAIL: (id: string) => `/products/${id}`,
@@ -59,13 +47,11 @@ export const API_ENDPOINTS = {
     SEARCH: '/products/search',
     BY_VENDOR: (vendorId: string) => `/products/vendor/${vendorId}`,
   },
-  // Vendors
   VENDORS: {
     LIST: '/vendors',
     DETAIL: (id: string) => `/vendors/${id}`,
     PRODUCTS: (id: string) => `/vendors/${id}/products`,
   },
-  // Cart
   CART: {
     GET: '/cart',
     ADD: '/cart/add',
@@ -73,7 +59,6 @@ export const API_ENDPOINTS = {
     REMOVE: '/cart/remove',
     CLEAR: '/cart/clear',
   },
-  // Orders
   ORDERS: {
     CREATE: '/orders',
     LIST: '/orders',
@@ -81,31 +66,12 @@ export const API_ENDPOINTS = {
     TRACK: (id: string) => `/orders/${id}/track`,
     CANCEL: (id: string) => `/orders/${id}/cancel`,
   },
-  // Reviews
   REVIEWS: {
     LIST: (productId: string) => `/products/${productId}/reviews`,
     CREATE: (productId: string) => `/products/${productId}/reviews`,
   },
-  // Admin
-  ADMIN: {
-    DASHBOARD: '/admin/dashboard',
-    ANALYTICS: '/admin/analytics',
-    VENDORS: {
-      LIST: '/admin/vendors',
-      APPROVE: (id: string) => `/admin/vendors/${id}/approve`,
-      REJECT: (id: string) => `/admin/vendors/${id}/reject`,
-    },
-    PRODUCTS: {
-      LIST: '/admin/products',
-      UPDATE: (id: string) => `/admin/products/${id}`,
-    },
-    ORDERS: {
-      LIST: '/admin/orders',
-      UPDATE: (id: string) => `/admin/orders/${id}`,
-    },
-    USERS: {
-      LIST: '/admin/users',
-      UPDATE: (id: string) => `/admin/users/${id}`,
-    },
+  USERS: {
+    AVATAR: '/users/profile/avatar',
+    PROFILE: '/users/profile',
   },
 };

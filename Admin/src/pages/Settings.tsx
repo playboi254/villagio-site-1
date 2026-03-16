@@ -1,4 +1,5 @@
-import { User, Lock, Bell, Globe, DollarSign, Upload } from "lucide-react";
+import { useState, useRef } from "react";
+import { User, Lock, Bell, Globe, DollarSign, Upload, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +14,81 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import api from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profile, setProfile] = useState({
+    firstName: "Barrack",
+    lastName: "Omondi",
+    email: "barrack@villagio.co.ke",
+    phone: "+254 712 345 678",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Barrack"
+  });
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size exceeds 2MB limit.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      setIsLoading(true);
+      const response = await api.post("/users/upload-avatar", formData);
+      setProfile(prev => ({ ...prev, avatar: response.data.avatarUrl }));
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully!"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.response?.data?.message || "Something went wrong",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsLoading(true);
+      // Backend expects { name, phone, address } - combining first and last name
+      await api.put("/users/profile", {
+        name: `${profile.firstName} ${profile.lastName}`,
+        phone: profile.phone
+      });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.response?.data?.message || "Could not save profile",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -56,12 +130,25 @@ export default function Settings() {
               {/* Profile Picture */}
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Barrack" />
-                  <AvatarFallback className="bg-accent text-accent-foreground text-2xl">BO</AvatarFallback>
+                  <AvatarImage src={profile.avatar} />
+                  <AvatarFallback className="bg-accent text-accent-foreground text-2xl">
+                    {profile.firstName[0]}{profile.lastName[0]}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline">
-                    <Upload className="mr-2 h-4 w-4" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={handleAvatarClick}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                     Upload Photo
                   </Button>
                   <p className="text-sm text-muted-foreground mt-2">JPG, PNG or GIF. Max 2MB.</p>
@@ -71,23 +158,43 @@ export default function Settings() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="Barrack" />
+                  <Input 
+                    id="firstName" 
+                    value={profile.firstName} 
+                    onChange={e => setProfile(p => ({ ...p, firstName: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Omondi" />
+                  <Input 
+                    id="lastName" 
+                    value={profile.lastName} 
+                    onChange={e => setProfile(p => ({ ...p, lastName: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="barrack@villagio.co.ke" />
+                  <Input id="email" type="email" value={profile.email} disabled />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" type="tel" defaultValue="+254 712 345 678" />
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    value={profile.phone} 
+                    onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                  />
                 </div>
               </div>
 
-              <Button className="bg-accent hover:bg-accent/90">Save Changes</Button>
+              <Button 
+                className="bg-accent hover:bg-accent/90" 
+                onClick={handleSaveProfile}
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

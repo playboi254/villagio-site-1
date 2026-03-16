@@ -8,7 +8,6 @@ import {
   MapPin, 
   Truck, 
   ShieldCheck,
-  Plus,
   Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,9 +18,10 @@ import { Separator } from '@/components/ui/separator';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
+import api from '@/lib/api';
 
 const Checkout: React.FC = () => {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
@@ -29,16 +29,13 @@ const Checkout: React.FC = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
+    streetAddress: '',
     city: '',
     county: '',
     postalCode: '',
   });
   const [paymentMethod, setPaymentMethod] = useState('mpesa');
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const deliveryFee = subtotal >= 3000 ? 0 : 200;
-  const total = subtotal + deliveryFee;
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDeliveryAddress({ ...deliveryAddress, [e.target.name]: e.target.value });
@@ -50,20 +47,68 @@ const Checkout: React.FC = () => {
   };
 
   const handlePlaceOrder = async () => {
-    setIsProcessing(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const orderId = `ORD-${Date.now().toString().slice(-6)}`;
-    clearCart();
-    
-    toast({ 
-      title: 'Order Placed Successfully!', 
-      description: `Your order #${orderId} has been confirmed.` 
-    });
-    
-    navigate(`/order-tracking/${orderId}`);
+    try {
+      setIsProcessing(true);
+      
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        deliveryAddress: {
+          phone: deliveryAddress.phone,
+          streetAddress: deliveryAddress.streetAddress,
+          city: deliveryAddress.city,
+          county: deliveryAddress.county,
+          postalCode: deliveryAddress.postalCode || '00100'
+        },
+        paymentMethod: paymentMethod === 'mpesa' ? 'mpesa' : 
+                       paymentMethod === 'card' ? 'credit' : 'cash_on_delivery'
+      };
+
+      const response = await api.post('/orders', orderData);
+      const savedOrder = response.data;
+
+      if (paymentMethod === 'mpesa') {
+        try {
+          await api.post('/payments/stk-push', {
+            orderId: savedOrder._id,
+            phone: deliveryAddress.phone,
+            amount: total
+          });
+          toast({
+            title: 'M-Pesa STK Push Sent',
+            description: 'Please check your phone and enter your PIN to complete the payment.',
+          });
+          // Wait a bit for the simulated callback to complete in backend
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (payErr) {
+          console.error("Payment trigger failed:", payErr);
+        }
+      }
+      
+      clearCart();
+      toast({ 
+        title: 'Order Placed Successfully!', 
+        description: `Your order #${savedOrder._id.slice(-6).toUpperCase()} has been confirmed.` 
+      });
+
+      // Trigger WhatsApp Notification
+      const waMessage = `Halo Villagio, a new order #${savedOrder._id.slice(-6).toUpperCase()} has been placed by ${deliveryAddress.firstName} ${deliveryAddress.lastName}. Total: KSh ${total.toLocaleString()}. Method: ${paymentMethod.toUpperCase()}.`;
+      const waUrl = `https://wa.me/254115566775?text=${encodeURIComponent(waMessage)}`;
+      window.open(waUrl, '_blank');
+      
+      navigate(`/order-tracking/${savedOrder._id}`);
+    } catch (error: any) {
+      toast({
+        title: 'Order Failed',
+        description: error.response?.data?.message || 'There was an error placing your order. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (items.length === 0) {
@@ -84,7 +129,7 @@ const Checkout: React.FC = () => {
     <MainLayout>
       {/* Header */}
       <section className="bg-muted/50 py-8">
-        <div className="container">
+        <div className="container px-4">
           <Link to="/cart" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
             <ArrowLeft className="h-4 w-4" />
             Back to Cart
@@ -97,37 +142,37 @@ const Checkout: React.FC = () => {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                 {step > 1 ? <Check className="h-4 w-4" /> : '1'}
               </div>
-              <span className="font-medium">Delivery</span>
+              <span className="font-sm md:font-medium whitespace-nowrap">Delivery</span>
             </div>
             <div className="flex-1 h-px bg-border" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                 {step > 2 ? <Check className="h-4 w-4" /> : '2'}
               </div>
-              <span className="font-medium">Payment</span>
+              <span className="font-sm md:font-medium whitespace-nowrap">Payment</span>
             </div>
             <div className="flex-1 h-px bg-border" />
             <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                 3
               </div>
-              <span className="font-medium">Confirm</span>
+              <span className="font-sm md:font-medium whitespace-nowrap">Confirm</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="py-12">
-        <div className="container">
+        <div className="container px-4">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Step 1: Delivery Address */}
               {step === 1 && (
                 <motion.div 
-                  initial={{ opacity: 0, x: -20 }} 
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-card rounded-2xl p-6 shadow-card"
+                   initial={{ opacity: 0, x: -20 }} 
+                   animate={{ opacity: 1, x: 0 }}
+                   className="bg-card rounded-2xl p-6 shadow-card"
                 >
                   <div className="flex items-center gap-3 mb-6">
                     <MapPin className="h-5 w-5 text-primary" />
@@ -159,12 +204,12 @@ const Checkout: React.FC = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone">Phone Number (M-Pesa)</Label>
                       <Input 
                         id="phone" 
                         name="phone"
                         type="tel"
-                        placeholder="+254 700 123 456"
+                        placeholder="254700123456"
                         value={deliveryAddress.phone}
                         onChange={handleAddressChange}
                         required 
@@ -172,12 +217,12 @@ const Checkout: React.FC = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="address">Street Address</Label>
+                      <Label htmlFor="streetAddress">Street Address</Label>
                       <Input 
-                        id="address" 
-                        name="address"
+                        id="streetAddress" 
+                        name="streetAddress"
                         placeholder="House/Apartment number, Street name"
-                        value={deliveryAddress.address}
+                        value={deliveryAddress.streetAddress}
                         onChange={handleAddressChange}
                         required 
                       />
@@ -247,22 +292,7 @@ const Checkout: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-semibold">M-Pesa</div>
-                            <div className="text-sm text-muted-foreground">Pay with M-Pesa mobile money</div>
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                    
-                    <div className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-colors cursor-pointer ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex-1 cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                            <CreditCard className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <div className="font-semibold">Credit/Debit Card</div>
-                            <div className="text-sm text-muted-foreground">Visa, Mastercard, or other cards</div>
+                            <div className="text-sm text-muted-foreground">Lipa na M-Pesa Online (STK Push)</div>
                           </div>
                         </div>
                       </Label>
@@ -315,7 +345,7 @@ const Checkout: React.FC = () => {
                       {deliveryAddress.firstName} {deliveryAddress.lastName}
                     </p>
                     <p className="text-muted-foreground">
-                      {deliveryAddress.address}, {deliveryAddress.city}
+                      {deliveryAddress.streetAddress}, {deliveryAddress.city}
                     </p>
                     <p className="text-muted-foreground">{deliveryAddress.phone}</p>
                   </div>
@@ -341,7 +371,7 @@ const Checkout: React.FC = () => {
                       {items.map((item) => (
                         <div key={item.productId} className="flex items-center gap-4">
                           <img 
-                            src={item.product.images[0]} 
+                            src={item.product.images?.[0] || '/placeholder-product.jpg'} 
                             alt={item.product.name}
                             className="w-16 h-16 rounded-lg object-cover"
                           />
@@ -399,12 +429,12 @@ const Checkout: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery</span>
                     <span className={deliveryFee === 0 ? 'text-primary' : ''}>
-                      {deliveryFee === 0 ? 'Free' : `KSh ${deliveryFee}`}
+                      {deliveryFee === 0 ? 'Free' : `KSh ${deliveryFee.toLocaleString()}`}
                     </span>
                   </div>
                   {deliveryFee > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Free delivery on orders above KSh 3,000
+                      Free delivery on orders above KSh 2,000
                     </p>
                   )}
                 </div>

@@ -3,6 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in Leaflet + Webpack/Vite
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const deliveryStats = [
   { label: "Active Deliveries", value: "24", icon: Truck, color: "accent" },
@@ -47,7 +59,15 @@ const activeDeliveries = [
     status: "delivered",
     progress: 100,
     eta: "Completed",
+    coords: [-1.3000, 36.7800] as [number, number],
   },
+];
+
+const deliveryLocations: { name: string; coords: [number, number]; type: 'driver' | 'farm' | 'customer' }[] = [
+  { name: "James (In Transit)", coords: [-1.2667, 36.8121], type: 'driver' },
+  { name: "Paul (Picking Up)", coords: [-1.3191, 36.7050], type: 'driver' },
+  { name: "Green Valley Farms", coords: [-0.9500, 37.0167], type: 'farm' },
+  { name: "Westlands Mall (Drop-off)", coords: [-1.2588, 36.8041], type: 'customer' },
 ];
 
 const drivers = [
@@ -95,12 +115,28 @@ export default function Delivery() {
             <CardTitle>Live Delivery Map</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="aspect-video rounded-xl bg-muted flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-2" />
-                <p>Map View</p>
-                <p className="text-sm">Real-time delivery tracking</p>
-              </div>
+            <div className="aspect-video rounded-xl overflow-hidden border border-muted">
+              <MapContainer 
+                center={[-1.286389, 36.817223]} 
+                zoom={11} 
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {deliveryLocations.map((loc, idx) => (
+                  <Marker key={idx} position={loc.coords}>
+                    <Popup>
+                      <div className="text-sm font-medium">
+                        {loc.name}
+                        <p className="text-xs text-muted-foreground font-normal capitalize">{loc.type}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
             </div>
           </CardContent>
         </Card>

@@ -1,67 +1,4 @@
-// Category Images
-import categoryVegetables from '@/assets/Vegy/Spinach.jpg';
-import categoryFruits from '@/assets/Fruit/Fruits.jpg';
-import categoryDairy from '@/assets/Dairy/Dairy.jpg';
-import categoryMeat from '@/assets/Herbs/Spices.jpg';
-
-// Vegetables
-import cabbage from '@/assets/Vegy/Cabbage.jpg';
-import capsicum from '@/assets/Vegy/Capsicum.jpg';
-import carrot from '@/assets/Vegy/Carrot.jpg';
-import tomato from '@/assets/Vegy/Tomato.jpg';
-import ginger from '@/assets/Vegy/Ginger.jpg';
-import garlic from '@/assets/Vegy/Garlic.jpg';
-import lemonGrassVegy from '@/assets/Herbs/Lemongrass.jpg';
-import peas from '@/assets/Vegy/Peas.jpg';
-import chilli from '@/assets/Vegy/chilli.jpg';
-import potatoes from '@/assets/Vegy/Category potatoes.jpg';
-import onions from '@/assets/Slider/Onions.jpg';
-
-// Fruits
-import apple from '@/assets/Fruit/Apple2.jpg';
-import avocado from '@/assets/Fruit/Avocado.jpg';
-import banana from '@/assets/Fruit/Banana 3.jpg';
-import grapes from '@/assets/Fruit/Grapes 2.jpg';
-import guava from '@/assets/Fruit/Guava.jpg';
-import lemon from '@/assets/Fruit/Lemon.jpg';
-import mango from '@/assets/Fruit/Mangoes.jpg';
-import orange from '@/assets/Fruit/Orange2.jpg';
-import passion from '@/assets/Fruit/Passion2.jpg';
-import pineapple from '@/assets/Fruit/Pineapple.jpg';
-import watermelon from '@/assets/Fruit/Watermellon2.jpg';
-
-// Dairy
-import buttermilk from '@/assets/Dairy/Buttermilk (Sour Milk).jpg';
-import chocolate from '@/assets/Dairy/Chocolate.jpg';
-import choko from '@/assets/Dairy/Choko.jpg';
-import dairyEggs from '@/assets/Dairy/Dairy nd eggs.jpg';
-import eggs from '@/assets/Dairy/Eggs.jpg';
-import ghee from '@/assets/Dairy/Ghee.jpg';
-import iceCream from '@/assets/Dairy/Ice cream.jpg';
-import milk from '@/assets/Dairy/Milk.jpg';
-import milkShake from '@/assets/Dairy/Milk shake.jpg';
-import smoothie from '@/assets/Dairy/Smoothie.jpg';
-import yoghurt from '@/assets/Dairy/Yorghut.jpg';
-
-// Cereals
-import bagOfRice from '@/assets/Cereals/bag of rice.jpg';
-import cereals from '@/assets/Cereals/Category Cereals.jpg';
-import greenPeas from '@/assets/Cereals/Fresh Green Peas 2.jpg';
-import greenGram from '@/assets/Cereals/Green Gram.jpg';
-import groundnuts from '@/assets/Cereals/groundnuts.jpg';
-import maize from '@/assets/Cereals/Maize.jpg';
-import sorghum from '@/assets/Cereals/Sorghum.jpg';
-import wholesaleSorghum from '@/assets/Cereals/Wholesale Sorghum.jpg';
-
-// Herbs
-import basil from '@/assets/Herbs/Basil.jpg';
-import lemonGrass from '@/assets/Herbs/Lemongrass.jpg';
-import mint from '@/assets/Herbs/Mint.jpg';
-import parsley from '@/assets/Herbs/parsley.jpg';
-import rosemary from '@/assets/Herbs/Rosemary.jpg';
-import sage from '@/assets/Herbs/Sage.jpg';
-
-// Slider/Hero
+// Hero assets remain as imports if they are not in public/uploads yet
 import heroVideo from '@/assets/Slider/3df8a9a3e5193adf2cdd90be4919a092.mp4';
 import heroSlide1 from '@/assets/Slider/1000021505.jpg';
 import heroSlide2 from '@/assets/Slider/1000021507.jpg';
@@ -83,7 +20,7 @@ export const categories = [
     id: '1',
     name: 'Fresh Vegetables',
     slug: 'vegetables',
-    image: categoryVegetables,
+    image: '/uploads/cabbage.jpg',
     description: 'Farm-fresh vegetables harvested daily',
     productCount: 48,
   },
@@ -91,7 +28,7 @@ export const categories = [
     id: '2',
     name: 'Organic Fruits',
     slug: 'fruits',
-    image: categoryFruits,
+    image: '/uploads/apple.jpg',
     description: 'Sweet and juicy fruits from local farms',
     productCount: 36,
   },
@@ -99,7 +36,7 @@ export const categories = [
     id: '3',
     name: 'Dairy & Eggs',
     slug: 'dairy',
-    image: categoryDairy,
+    image: '/uploads/milk.jpg',
     description: 'Fresh milk, cheese, and free-range eggs',
     productCount: 24,
   },
@@ -107,7 +44,7 @@ export const categories = [
     id: '4',
     name: 'Herbs & Spices',
     slug: 'herbs',
-    image: categoryMeat,
+    image: '/uploads/chilli.jpg',
     description: 'Fresh herbs and aromatic spices',
     productCount: 67,
   },
@@ -131,7 +68,7 @@ export const products = [
     reviewCount: 124,
     inStock: true,
     stockQuantity: 150,
-    images: [tomato],
+    images: ['/uploads/tomato.jpg'],
     tags: ['organic', 'fresh', 'local'],
     discount: 10,
     nutrition: {
@@ -155,7 +92,7 @@ export const products = [
     reviewCount: 89,
     inStock: true,
     stockQuantity: 80,
-    images: [carrot],
+    images: ['/uploads/carrot.jpg'],
     tags: ['organic', 'fresh'],
     badge: 'Best Seller',
   },
@@ -173,7 +110,7 @@ export const products = [
     reviewCount: 178,
     inStock: true,
     stockQuantity: 40,
-    images: [categoryVegetables],
+    images: ['/uploads/cabbage.jpg'],
     tags: ['organic', 'leafy-greens'],
   },
   {
@@ -190,7 +127,7 @@ export const products = [
     reviewCount: 234,
     inStock: true,
     stockQuantity: 75,
-    images: [potatoes],
+    images: ['/uploads/cabbage.jpg'], // Fallback for potatoes
     tags: ['organic', 'local'],
   },
   {
@@ -207,7 +144,7 @@ export const products = [
     reviewCount: 95,
     inStock: true,
     stockQuantity: 120,
-    images: [cabbage],
+    images: ['/uploads/cabbage.jpg'],
     tags: ['fresh', 'local'],
   },
   {
@@ -224,7 +161,7 @@ export const products = [
     reviewCount: 67,
     inStock: true,
     stockQuantity: 45,
-    images: [capsicum],
+    images: ['/uploads/capsicum.jpg'],
     tags: ['organic', 'colorful'],
   },
   {
@@ -241,7 +178,7 @@ export const products = [
     reviewCount: 112,
     inStock: true,
     stockQuantity: 30,
-    images: [ginger],
+    images: ['/uploads/ginger.jpg'],
     tags: ['organic', 'medicinal'],
   },
   {
@@ -258,7 +195,7 @@ export const products = [
     reviewCount: 88,
     inStock: true,
     stockQuantity: 60,
-    images: [garlic],
+    images: ['/uploads/garlic.jpg'],
     tags: ['fresh', 'aromatic'],
   },
   {
@@ -275,7 +212,7 @@ export const products = [
     reviewCount: 73,
     inStock: true,
     stockQuantity: 55,
-    images: [peas],
+    images: ['/uploads/peas.jpg'],
     tags: ['fresh', 'sweet'],
   },
   {
@@ -292,7 +229,7 @@ export const products = [
     reviewCount: 91,
     inStock: true,
     stockQuantity: 25,
-    images: [chilli],
+    images: ['/uploads/chilli.jpg'],
     tags: ['spicy', 'hot'],
   },
   {
@@ -309,7 +246,7 @@ export const products = [
     reviewCount: 102,
     inStock: true,
     stockQuantity: 200,
-    images: [onions],
+    images: ['/uploads/cabbage.jpg'], // Fallback for onions
     tags: ['organic', 'essential'],
   },
 
@@ -328,7 +265,7 @@ export const products = [
     reviewCount: 203,
     inStock: true,
     stockQuantity: 200,
-    images: [avocado],
+    images: ['/uploads/avocado.jpg'],
     tags: ['organic', 'seasonal'],
     badge: 'Best Seller',
   },
@@ -346,7 +283,7 @@ export const products = [
     reviewCount: 156,
     inStock: true,
     stockQuantity: 100,
-    images: [mango],
+    images: ['/uploads/mangoes.jpg'],
     tags: ['fresh', 'seasonal'],
   },
   {
@@ -363,7 +300,7 @@ export const products = [
     reviewCount: 134,
     inStock: true,
     stockQuantity: 90,
-    images: [apple],
+    images: ['/uploads/apple.jpg'],
     tags: ['fresh', 'crisp'],
   },
   {
@@ -380,7 +317,7 @@ export const products = [
     reviewCount: 187,
     inStock: true,
     stockQuantity: 150,
-    images: [banana],
+    images: ['/uploads/banana.jpg'],
     tags: ['fresh', 'nutritious'],
   },
   {
@@ -397,7 +334,7 @@ export const products = [
     reviewCount: 98,
     inStock: true,
     stockQuantity: 60,
-    images: [grapes],
+    images: ['/uploads/grapes.jpg'],
     tags: ['seedless', 'sweet'],
   },
   {
@@ -414,7 +351,7 @@ export const products = [
     reviewCount: 76,
     inStock: true,
     stockQuantity: 70,
-    images: [guava],
+    images: ['/uploads/guava.jpg'],
     tags: ['fresh', 'vitamin-c'],
   },
   {
@@ -431,7 +368,7 @@ export const products = [
     reviewCount: 145,
     inStock: true,
     stockQuantity: 110,
-    images: [lemon],
+    images: ['/uploads/lemon.jpg'],
     tags: ['citrus', 'tangy'],
   },
   {
@@ -448,7 +385,7 @@ export const products = [
     reviewCount: 201,
     inStock: true,
     stockQuantity: 180,
-    images: [orange],
+    images: ['/uploads/orange.jpg'],
     tags: ['citrus', 'juicy'],
     badge: 'Popular',
   },
@@ -466,7 +403,7 @@ export const products = [
     reviewCount: 167,
     inStock: true,
     stockQuantity: 85,
-    images: [passion],
+    images: ['/uploads/passion-fruit.jpg'],
     tags: ['exotic', 'aromatic'],
   },
   {
@@ -483,7 +420,7 @@ export const products = [
     reviewCount: 129,
     inStock: true,
     stockQuantity: 95,
-    images: [pineapple],
+    images: ['/uploads/pineapple.jpg'],
     tags: ['tropical', 'sweet'],
   },
   {
@@ -500,7 +437,7 @@ export const products = [
     reviewCount: 234,
     inStock: true,
     stockQuantity: 120,
-    images: [watermelon],
+    images: ['/uploads/watermellon.jpg'],
     tags: ['refreshing', 'hydrating'],
     badge: 'Summer Favorite',
   },
@@ -520,7 +457,7 @@ export const products = [
     reviewCount: 312,
     inStock: true,
     stockQuantity: 60,
-    images: [milk],
+    images: ['/uploads/milk.jpg'],
     tags: ['fresh', 'local'],
   },
   {
@@ -537,7 +474,7 @@ export const products = [
     reviewCount: 445,
     inStock: true,
     stockQuantity: 120,
-    images: [eggs],
+    images: ['/uploads/eggs.jpg'],
     tags: ['free-range', 'local'],
     badge: 'Farm Fresh',
   },
@@ -555,7 +492,7 @@ export const products = [
     reviewCount: 189,
     inStock: true,
     stockQuantity: 80,
-    images: [buttermilk],
+    images: ['/uploads/buttermilk-sour-milk.jpg'],
     tags: ['traditional', 'probiotic'],
   },
   {
@@ -572,7 +509,7 @@ export const products = [
     reviewCount: 276,
     inStock: true,
     stockQuantity: 150,
-    images: [chocolate],
+    images: ['/uploads/ice-cream.jpg'], // Fallback for chocolate
     tags: ['sweet', 'treat'],
   },
   {
@@ -589,7 +526,7 @@ export const products = [
     reviewCount: 198,
     inStock: true,
     stockQuantity: 100,
-    images: [choko],
+    images: ['/uploads/ice-cream.jpg'], // Fallback for choko
     tags: ['beverage', 'chocolate'],
   },
   {
@@ -606,7 +543,7 @@ export const products = [
     reviewCount: 167,
     inStock: true,
     stockQuantity: 45,
-    images: [ghee],
+    images: ['/uploads/ghee.jpg'],
     tags: ['traditional', 'cooking'],
   },
   {
@@ -623,7 +560,7 @@ export const products = [
     reviewCount: 289,
     inStock: true,
     stockQuantity: 75,
-    images: [iceCream],
+    images: ['/uploads/ice-cream.jpg'],
     tags: ['dessert', 'frozen'],
   },
   {
@@ -640,7 +577,7 @@ export const products = [
     reviewCount: 234,
     inStock: true,
     stockQuantity: 60,
-    images: [milkShake],
+    images: ['/uploads/milk-shake.jpg'],
     tags: ['beverage', 'creamy'],
   },
   {
@@ -657,7 +594,7 @@ export const products = [
     reviewCount: 312,
     inStock: true,
     stockQuantity: 90,
-    images: [smoothie],
+    images: ['/uploads/smoothie.jpg'],
     tags: ['healthy', 'fresh'],
     badge: 'Healthy Choice',
   },
@@ -675,7 +612,7 @@ export const products = [
     reviewCount: 267,
     inStock: true,
     stockQuantity: 110,
-    images: [yoghurt],
+    images: ['/uploads/yorghut.jpg'],
     tags: ['probiotic', 'healthy'],
   },
 
@@ -694,7 +631,7 @@ export const products = [
     reviewCount: 198,
     inStock: true,
     stockQuantity: 500,
-    images: [bagOfRice],
+    images: ['/uploads/cabbage.jpg'], // Fallback for rice
     tags: ['staple', 'quality'],
   },
   {
@@ -711,7 +648,7 @@ export const products = [
     reviewCount: 145,
     inStock: true,
     stockQuantity: 200,
-    images: [greenPeas],
+    images: ['/uploads/peas.jpg'],
     tags: ['protein', 'nutritious'],
   },
   {
@@ -728,7 +665,7 @@ export const products = [
     reviewCount: 223,
     inStock: true,
     stockQuantity: 180,
-    images: [greenGram],
+    images: ['/uploads/cabbage.jpg'], // Fallback for ndengu
     tags: ['protein', 'traditional'],
   },
   {
@@ -745,7 +682,7 @@ export const products = [
     reviewCount: 167,
     inStock: true,
     stockQuantity: 120,
-    images: [groundnuts],
+    images: ['/uploads/cabbage.jpg'], // Fallback for groundnuts
     tags: ['protein', 'snack'],
   },
   {
@@ -762,7 +699,7 @@ export const products = [
     reviewCount: 389,
     inStock: true,
     stockQuantity: 600,
-    images: [maize],
+    images: ['/uploads/cabbage.jpg'], // Fallback for maize
     tags: ['staple', 'local'],
     badge: 'Essential',
   },
@@ -780,7 +717,7 @@ export const products = [
     reviewCount: 134,
     inStock: true,
     stockQuantity: 150,
-    images: [sorghum],
+    images: ['/uploads/cabbage.jpg'], // Fallback for sorghum
     tags: ['organic', 'nutritious'],
   },
 
@@ -799,7 +736,7 @@ export const products = [
     reviewCount: 87,
     inStock: true,
     stockQuantity: 40,
-    images: [basil],
+    images: ['/uploads/cabbage.jpg'], // Fallback for basil
     tags: ['aromatic', 'fresh'],
   },
   {
@@ -816,7 +753,7 @@ export const products = [
     reviewCount: 112,
     inStock: true,
     stockQuantity: 35,
-    images: [lemonGrass],
+    images: ['/uploads/lemon-grass.jpg'],
     tags: ['aromatic', 'medicinal'],
   },
   {
@@ -833,7 +770,7 @@ export const products = [
     reviewCount: 98,
     inStock: true,
     stockQuantity: 50,
-    images: [mint],
+    images: ['/uploads/cabbage.jpg'], // Fallback for mint
     tags: ['aromatic', 'refreshing'],
   },
   {
@@ -850,7 +787,7 @@ export const products = [
     reviewCount: 76,
     inStock: true,
     stockQuantity: 45,
-    images: [parsley],
+    images: ['/uploads/cabbage.jpg'], // Fallback for parsley
     tags: ['fresh', 'garnish'],
   },
   {
@@ -867,7 +804,7 @@ export const products = [
     reviewCount: 89,
     inStock: true,
     stockQuantity: 30,
-    images: [rosemary],
+    images: ['/uploads/cabbage.jpg'], // Fallback for rosemary
     tags: ['aromatic', 'mediterranean'],
   },
   {
@@ -884,7 +821,7 @@ export const products = [
     reviewCount: 67,
     inStock: true,
     stockQuantity: 25,
-    images: [sage],
+    images: ['/uploads/cabbage.jpg'], // Fallback for sage
     tags: ['medicinal', 'aromatic'],
   },
 ];
@@ -896,8 +833,8 @@ export const vendors = [
     name: 'Green Valley Farm',
     slug: 'green-valley-farm',
     description: 'Family-owned organic farm in Naivasha. We grow a variety of vegetables and fruits using sustainable practices.',
-    logo: categoryVegetables,
-    coverImage: categoryVegetables,
+    logo: '/uploads/cabbage.jpg',
+    coverImage: '/uploads/cabbage.jpg',
     rating: 4.8,
     reviewCount: 1240,
     productCount: 87,
@@ -912,8 +849,8 @@ export const vendors = [
     name: 'Fresh Harvest Co.',
     slug: 'fresh-harvest-co',
     description: 'Certified organic farm specializing in leafy greens and herbs.',
-    logo: categoryVegetables,
-    coverImage: categoryVegetables,
+    logo: '/uploads/cabbage.jpg',
+    coverImage: '/uploads/cabbage.jpg',
     rating: 4.6,
     reviewCount: 856,
     productCount: 64,
@@ -928,8 +865,8 @@ export const vendors = [
     name: 'Organic Fields',
     slug: 'organic-fields',
     description: 'Premium organic produce grown in the fertile soils of Meru.',
-    logo: categoryFruits,
-    coverImage: categoryFruits,
+    logo: '/uploads/apple.jpg',
+    coverImage: '/uploads/apple.jpg',
     rating: 4.9,
     reviewCount: 672,
     productCount: 52,
@@ -944,8 +881,8 @@ export const vendors = [
     name: 'Farm Direct',
     slug: 'farm-direct',
     description: 'Fresh dairy products and eggs from our farms in Nyeri.',
-    logo: categoryDairy,
-    coverImage: categoryDairy,
+    logo: '/uploads/milk.jpg',
+    coverImage: '/uploads/milk.jpg',
     rating: 4.7,
     reviewCount: 1890,
     productCount: 43,
@@ -1187,7 +1124,7 @@ export const adminOrders = [
 //     id: '1',
 //     name: 'Fresh Vegetables',
 //     slug: 'vegetables',
-//     image: categoryVegetables,
+//     image: '/uploads/cabbage.jpg',
 //     description: 'Farm-fresh vegetables harvested daily',
 //     productCount: 48,
 //   },

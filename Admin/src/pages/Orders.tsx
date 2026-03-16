@@ -19,33 +19,45 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const orders = [
-  { id: "ORD-001", customer: "John Kamau", location: "Westlands", items: 5, total: 2450, payment: "M-Pesa", status: "delivered", date: "2024-12-30" },
-  { id: "ORD-002", customer: "Sarah Wanjiku", location: "Karen", items: 3, total: 1820, payment: "Card", status: "in-transit", date: "2024-12-30" },
-  { id: "ORD-003", customer: "Peter Odhiambo", location: "Kilimani", items: 8, total: 4200, payment: "M-Pesa", status: "processing", date: "2024-12-29" },
-  { id: "ORD-004", customer: "Grace Muthoni", location: "Lavington", items: 2, total: 980, payment: "Bank Transfer", status: "pending", date: "2024-12-29" },
-  { id: "ORD-005", customer: "David Njoroge", location: "Runda", items: 6, total: 3150, payment: "M-Pesa", status: "delivered", date: "2024-12-28" },
-  { id: "ORD-006", customer: "Mary Akinyi", location: "Parklands", items: 4, total: 2100, payment: "Card", status: "cancelled", date: "2024-12-28" },
-];
+import { useOrders } from "@/hooks/useOrders";
+import { format } from "date-fns";
 
 const statusStyles: Record<string, string> = {
   pending: "bg-warning/10 text-warning border-warning/20",
-  processing: "bg-info/10 text-info border-info/20",
-  "in-transit": "bg-accent/10 text-accent border-accent/20",
+  confirmed: "bg-info/10 text-info border-info/20",
+  shipped: "bg-accent/10 text-accent border-accent/20",
   delivered: "bg-success/10 text-success border-success/20",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 export default function Orders() {
+  const { orders, isLoading, updateStatus } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const stats = [
-    { label: "Total Orders", value: "1,284", icon: ShoppingCart, color: "accent" },
-    { label: "Pending", value: "42", icon: Clock, color: "warning" },
-    { label: "Completed", value: "1,156", icon: CheckCircle, color: "success" },
-    { label: "Cancelled", value: "86", icon: XCircle, color: "destructive" },
+    { label: "Total Orders", value: orders.length, icon: ShoppingCart, color: "accent" },
+    { label: "Pending", value: orders.filter(o => o.status === 'pending').length, icon: Clock, color: "warning" },
+    { label: "Delivered", value: orders.filter(o => o.status === 'delivered').length, icon: CheckCircle, color: "success" },
+    { label: "Cancelled", value: orders.filter(o => o.status === 'cancelled').length, icon: XCircle, color: "destructive" },
   ];
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.consumer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    await updateStatus(id, newStatus);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">Loading orders...</div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -69,7 +81,7 @@ export default function Orders() {
                 <stat.icon className={`h-5 w-5 text-${stat.color}`} />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
               </div>
             </CardContent>
@@ -90,15 +102,15 @@ export default function Orders() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select defaultValue="all">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="in-transit">In Transit</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
@@ -112,7 +124,7 @@ export default function Orders() {
       </Card>
 
       {/* Orders Table */}
-      <Card className="shadow-card border-0">
+      <Card className="shadow-card border-0 overflow-auto">
         <CardHeader>
           <CardTitle>All Orders</CardTitle>
         </CardHeader>
@@ -125,28 +137,54 @@ export default function Orders() {
                 <TableHead>Location</TableHead>
                 <TableHead>Items</TableHead>
                 <TableHead>Total</TableHead>
-                <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>{order.location}</TableCell>
-                  <TableCell>{order.items}</TableCell>
-                  <TableCell>KES {order.total.toLocaleString()}</TableCell>
-                  <TableCell>{order.payment}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusStyles[order.status]}>
-                      {order.status.replace("-", " ")}
-                    </Badge>
+              {filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                    No orders found.
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{order.date}</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredOrders.map((order) => (
+                  <TableRow key={order._id} className="hover:bg-muted/50">
+                    <TableCell className="font-mono text-xs">{order._id.substring(0, 8).toUpperCase()}</TableCell>
+                    <TableCell className="font-medium">{order.consumer?.name || "Unknown"}</TableCell>
+                    <TableCell>{order.deliveryAddress?.city}, {order.deliveryAddress?.county}</TableCell>
+                    <TableCell>{order.items?.length || 0}</TableCell>
+                    <TableCell>KES {order.totalAmount?.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusStyles[order.status]}>
+                        {order.status.replace("-", " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(order.createdAt), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <Select 
+                        value={order.status} 
+                        onValueChange={(val) => handleStatusChange(order._id, val)}
+                      >
+                        <SelectTrigger className="h-8 w-[110px] text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

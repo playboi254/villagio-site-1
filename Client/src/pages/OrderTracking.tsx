@@ -9,38 +9,63 @@ import {
   MapPin,
   Phone,
   ArrowLeft,
-  ShoppingBag
+  ShoppingBag,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import MainLayout from '@/components/layout/MainLayout';
-import { orders } from '@/data/mockData';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 const OrderTracking: React.FC = () => {
   const { orderId } = useParams();
-  
-  // Find order or use mock data for new orders
-  const order = orders.find(o => o.id === orderId) || {
-    id: orderId || 'ORD-123456',
-    status: 'processing',
-    items: [
-      { productId: '1', name: 'Organic Tomatoes', quantity: 2, price: 120 },
-      { productId: '5', name: 'Farm Fresh Milk', quantity: 1, price: 60 },
-    ],
-    subtotal: 300,
-    deliveryFee: 0,
-    total: 300,
-    deliveryAddress: {
-      street: 'Kimathi Street',
-      city: 'Nairobi',
-      state: 'Nairobi County',
-      zip: '00100',
+
+  const { data: order, isLoading: loading, error } = useQuery({
+    queryKey: ['order-tracking', orderId],
+    queryFn: async () => {
+      if (!orderId) return null;
+      const response = await api.get(`/orders/${orderId}`);
+      return response.data;
     },
-    createdAt: new Date().toISOString(),
-    estimatedDelivery: new Date(Date.now() + 3600000 * 2).toISOString(),
-  };
+    enabled: !!orderId,
+    refetchInterval: (query) => {
+      const data = query?.state?.data as any;
+      if (!data) return 5000;
+      return ['delivered', 'cancelled'].includes(data.status) ? 30000 : 5000;
+    }
+  });
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container py-20 flex flex-col items-center justify-center">
+          <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+          <h2 className="text-xl font-semibold">Loading order details...</h2>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <MainLayout>
+        <div className="container py-20 text-center">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold mb-2">Order Not Found</h1>
+          <p className="text-muted-foreground mb-6">
+            {error instanceof Error ? error.message : "We couldn't find the order you're looking for."}
+          </p>
+          <Button asChild>
+            <Link to="/products">Continue Shopping</Link>
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const trackingSteps = [
     {
@@ -53,17 +78,17 @@ const OrderTracking: React.FC = () => {
     },
     {
       id: 2,
-      title: 'Processing',
-      description: 'Your order is being prepared',
-      time: order.status !== 'pending' ? '10 mins ago' : null,
-      completed: ['processing', 'shipped', 'delivered'].includes(order.status),
+      title: 'Confirmed',
+      description: 'The farm has confirmed your order',
+      time: ['confirmed', 'shipped', 'delivered'].includes(order.status) ? 'Updated' : null,
+      completed: ['confirmed', 'shipped', 'delivered'].includes(order.status),
       icon: Package,
     },
     {
       id: 3,
       title: 'Out for Delivery',
       description: 'Your order is on its way',
-      time: order.status === 'shipped' || order.status === 'delivered' ? '30 mins ago' : null,
+      time: order.status === 'shipped' || order.status === 'delivered' ? 'In Transit' : null,
       completed: ['shipped', 'delivered'].includes(order.status),
       icon: Truck,
     },
@@ -71,9 +96,7 @@ const OrderTracking: React.FC = () => {
       id: 4,
       title: 'Delivered',
       description: 'Order has been delivered',
-      time: order.status === 'delivered' && 'deliveredAt' in order && order.deliveredAt 
-        ? new Date(order.deliveredAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        : null,
+      time: order.status === 'delivered' ? 'Arrived' : null,
       completed: order.status === 'delivered',
       icon: CheckCircle,
     },
@@ -83,10 +106,12 @@ const OrderTracking: React.FC = () => {
     switch (status) {
       case 'delivered':
         return 'bg-primary text-primary-foreground';
-      case 'processing':
+      case 'confirmed':
         return 'bg-orange text-white';
       case 'shipped':
         return 'bg-sky text-white';
+      case 'cancelled':
+        return 'bg-destructive text-destructive-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -96,7 +121,7 @@ const OrderTracking: React.FC = () => {
     <MainLayout>
       {/* Header */}
       <section className="bg-muted/50 py-8">
-        <div className="container">
+        <div className="container px-4">
           <Link to="/profile" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
             <ArrowLeft className="h-4 w-4" />
             Back to Profile
@@ -105,7 +130,7 @@ const OrderTracking: React.FC = () => {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold mb-2">Track Order</h1>
-              <p className="text-muted-foreground">Order ID: {order.id}</p>
+              <p className="text-muted-foreground text-sm break-all font-mono">Order ID: {order._id}</p>
             </div>
             <Badge className={`text-sm px-4 py-2 ${getStatusColor(order.status)}`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -115,7 +140,7 @@ const OrderTracking: React.FC = () => {
       </section>
 
       <section className="py-12">
-        <div className="container">
+        <div className="container px-4">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Tracking Timeline */}
             <div className="lg:col-span-2">
@@ -162,17 +187,16 @@ const OrderTracking: React.FC = () => {
                     </div>
                   </div>
                   
-                  {order.status !== 'delivered' && (
+                  {order.status !== 'delivered' && order.status !== 'cancelled' && (
                     <div className="mt-8 p-4 bg-leaf-light rounded-xl">
                       <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="font-medium text-foreground">Estimated Delivery</p>
+                          <p className="font-medium text-foreground">Next Step</p>
                           <p className="text-sm text-muted-foreground">
-                            Today by {new Date(Date.now() + 3600000 * 2).toLocaleTimeString('en-US', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
+                            {order.status === 'pending' ? 'Waiting for farm confirmation' : 
+                             order.status === 'confirmed' ? 'Preparing for delivery' : 
+                             'Package is in transit'}
                           </p>
                         </div>
                       </div>
@@ -192,19 +216,19 @@ const OrderTracking: React.FC = () => {
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm font-medium">Delivery Address</span>
                       </div>
-                      <p className="text-foreground">{order.deliveryAddress.street}</p>
+                      <p className="text-foreground">{order.deliveryAddress?.streetAddress || 'Door Step'}</p>
                       <p className="text-muted-foreground">
-                        {order.deliveryAddress.city}, {order.deliveryAddress.state}
+                        {order.deliveryAddress?.city}, {order.deliveryAddress?.county}
                       </p>
                     </div>
                     
                     <div>
                       <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Phone className="h-4 w-4" />
-                        <span className="text-sm font-medium">Contact Support</span>
+                        <span className="text-sm font-medium">Contact Customer</span>
                       </div>
-                      <p className="text-foreground">+254 700 123 456</p>
-                      <p className="text-muted-foreground">Available 24/7</p>
+                      <p className="text-foreground">{order.deliveryAddress?.phone}</p>
+                      <p className="text-muted-foreground">Support: +254 700 123 456</p>
                     </div>
                   </div>
                 </CardContent>
@@ -218,10 +242,10 @@ const OrderTracking: React.FC = () => {
                   <h2 className="font-display text-xl font-semibold mb-4">Order Summary</h2>
                   
                   <div className="space-y-4 mb-4">
-                    {order.items.map((item, i) => (
+                    {order.items?.map((item: any, i: number) => (
                       <div key={i} className="flex justify-between">
-                        <div>
-                          <p className="font-medium">{item.name}</p>
+                        <div className="flex-1">
+                          <p className="font-medium">{item.product?.name || 'Product'}</p>
                           <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
                         <span className="font-medium">KSh {(item.price * item.quantity).toLocaleString()}</span>
@@ -234,13 +258,11 @@ const OrderTracking: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span>KSh {order.subtotal.toLocaleString()}</span>
+                      <span>KSh {order.totalAmount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery</span>
-                      <span className={order.deliveryFee === 0 ? 'text-primary' : ''}>
-                        {order.deliveryFee === 0 ? 'Free' : `KSh ${order.deliveryFee}`}
-                      </span>
+                      <span>KSh 0</span>
                     </div>
                   </div>
                   
@@ -248,7 +270,7 @@ const OrderTracking: React.FC = () => {
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">KSh {order.total.toLocaleString()}</span>
+                    <span className="text-primary">KSh {order.totalAmount.toLocaleString()}</span>
                   </div>
                   
                   <div className="mt-6 space-y-3">

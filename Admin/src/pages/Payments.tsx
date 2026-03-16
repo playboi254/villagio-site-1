@@ -36,8 +36,12 @@ const transactions = [
   { id: "TXN-006", order: "ORD-2024-006", customer: "Mary Akinyi", method: "Card", amount: 2100, status: "refunded", date: "2024-12-28" },
 ];
 
+import { usePayments } from "@/hooks/usePayments";
+import { useDashboardData } from "@/hooks/useDashboardData";
+
 const methodIcons: Record<string, typeof Smartphone> = {
   "M-Pesa": Smartphone,
+  "Mpesa": Smartphone,
   Card: CreditCard,
   "Bank Transfer": Building2,
 };
@@ -49,6 +53,13 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function Payments() {
+  const { transactions, isLoading: isPaymentsLoading } = usePayments();
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+
+  const totalRevenue = dashboardData?.totalRevenue || 0;
+  const commissionEarned = totalRevenue * 0.1; // Assuming 10% commission
+
+  const isLoading = isPaymentsLoading || isDashboardLoading;
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -63,10 +74,12 @@ export default function Payments() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold mt-1">KES 2.9M</p>
+                <p className="text-2xl font-bold mt-1">
+                  {isLoading ? "..." : `KES ${totalRevenue.toLocaleString()}`}
+                </p>
                 <div className="flex items-center gap-1 mt-2 text-sm text-success">
                   <ArrowUpRight className="h-4 w-4" />
-                  <span>18% vs last month</span>
+                  <span>Live data</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-success/10">
@@ -79,11 +92,13 @@ export default function Payments() {
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Commission Earned</p>
-                <p className="text-2xl font-bold mt-1">KES 290K</p>
+                <p className="text-sm text-muted-foreground">Commission Earned (10%)</p>
+                <p className="text-2xl font-bold mt-1">
+                  {isLoading ? "..." : `KES ${commissionEarned.toLocaleString()}`}
+                </p>
                 <div className="flex items-center gap-1 mt-2 text-sm text-success">
                   <ArrowUpRight className="h-4 w-4" />
-                  <span>12% vs last month</span>
+                  <span>Estimated</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-accent/10">
@@ -97,8 +112,8 @@ export default function Payments() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending Payouts</p>
-                <p className="text-2xl font-bold mt-1">KES 156K</p>
-                <p className="text-sm text-muted-foreground mt-2">12 vendors</p>
+                <p className="text-2xl font-bold mt-1">KES 0</p>
+                <p className="text-sm text-muted-foreground mt-2">0 vendors</p>
               </div>
               <div className="p-3 rounded-xl bg-warning/10">
                 <CreditCard className="h-5 w-5 text-warning" />
@@ -111,10 +126,10 @@ export default function Payments() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Refunds</p>
-                <p className="text-2xl font-bold mt-1">KES 45K</p>
+                <p className="text-2xl font-bold mt-1">KES 0</p>
                 <div className="flex items-center gap-1 mt-2 text-sm text-destructive">
                   <ArrowDownRight className="h-4 w-4" />
-                  <span>8% refund rate</span>
+                  <span>0% refund rate</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-destructive/10">
@@ -220,26 +235,35 @@ export default function Payments() {
             </TableHeader>
             <TableBody>
               {transactions.map((txn) => {
-                const Icon = methodIcons[txn.method];
+                const Icon = methodIcons[txn.paymentMethod] || Smartphone;
                 return (
-                  <TableRow key={txn.id}>
-                    <TableCell className="font-medium">{txn.id}</TableCell>
-                    <TableCell>{txn.order}</TableCell>
-                    <TableCell>{txn.customer}</TableCell>
+                  <TableRow key={txn._id}>
+                    <TableCell className="font-medium truncate max-w-[100px]">{txn._id}</TableCell>
+                    <TableCell>Order #{txn._id.slice(-6)}</TableCell>
+                    <TableCell>{txn.consumer?.name || 'Unknown'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-muted-foreground" />
-                        {txn.method}
+                        {txn.paymentMethod}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">KES {txn.amount.toLocaleString()}</TableCell>
+                    <TableCell className="font-medium">KES {txn.totalAmount.toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge className={statusStyles[txn.status]}>{txn.status}</Badge>
+                      <Badge className={statusStyles[txn.paymentStatus]}>{txn.paymentStatus}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{txn.date}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(txn.updatedAt).toLocaleDateString()}
+                    </TableCell>
                   </TableRow>
                 );
               })}
+              {transactions.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No transactions found.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

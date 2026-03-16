@@ -39,20 +39,33 @@ const Cart: React.FC = () => {
                 transition={{ delay: index * 0.05 }}
                 className="flex gap-4 p-4 bg-card rounded-xl shadow-card"
               >
-                <img src={item.product.images[0]} alt={item.product.name} className="w-24 h-24 object-cover rounded-lg" />
+                <img 
+                  src={item.product.images?.[0] || '/placeholder-product.jpg'} 
+                  alt={item.product.name} 
+                  className="w-24 h-24 object-cover rounded-lg" 
+                />
                 <div className="flex-1">
-                  <Link to={`/products/${item.product.slug}`} className="font-medium hover:text-primary">{item.product.name}</Link>
-                  <p className="text-sm text-muted-foreground">{item.product.vendorName}</p>
-                  <p className="font-bold mt-1">KES {item.product.price.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">{item.product.unit}</span></p>
+                  <Link to={`/products/${item.product._id}`} className="font-medium hover:text-primary">
+                    {item.product.name}
+                  </Link>
+                  <p className="text-sm text-muted-foreground">{item.product.farmer?.name || 'Villagio Farm'}</p>
+                  <p className="font-bold mt-1">
+                    KES {item.product.price.toLocaleString()} 
+                    <span className="text-sm font-normal text-muted-foreground">/{item.product.unit || 'unit'}</span>
+                  </p>
                 </div>
                 <div className="flex flex-col items-end justify-between">
                   <button onClick={() => removeItem(item.productId)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </button>
                   <div className="flex items-center border rounded-lg">
-                    <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="p-2 hover:bg-muted"><Minus className="h-3 w-3" /></button>
+                    <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="p-2 hover:bg-muted">
+                      <Minus className="h-3 w-3" />
+                    </button>
                     <span className="px-3 text-sm font-medium">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-2 hover:bg-muted"><Plus className="h-3 w-3" /></button>
+                    <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-2 hover:bg-muted">
+                      <Plus className="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
               </motion.div>

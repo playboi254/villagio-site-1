@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {children}
       </main>
       <Footer />
+      {/* ✅ PWA install prompt — hidden on /admin pages automatically */}
+      <PWAInstallBanner />
     </div>
   );
 };

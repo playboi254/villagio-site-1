@@ -9,16 +9,18 @@ import { toast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: {
-    id: string;
+    _id: string;
     name: string;
-    slug: string;
     price: number;
     originalPrice?: number;
-    unit: string;
-    vendorName: string;
-    rating: number;
-    reviewCount: number;
-    inStock: boolean;
+    unit?: string;
+    farmer?: {
+      name: string;
+    };
+    category: string;
+    rating?: number;
+    reviewCount?: number;
+    stock: number;
     images: string[];
     tags?: string[];
   };
@@ -32,10 +34,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
     ? Math.round((1 - product.price / product.originalPrice) * 100) 
     : 0;
 
+  const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return '/placeholder-product.jpg';
+    if (imagePath.startsWith('http') || imagePath.startsWith('/')) return imagePath;
+    return `http://localhost:8000/${imagePath}`;
+  };
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product.id);
+    addItem(product as any);
     toast({
       title: 'Added to cart',
       description: `${product.name} has been added to your cart.`,
@@ -60,12 +68,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
     >
-      <Link to={`/products/${product.slug}`} className="group block">
+      <Link to={`/products/${product._id}`} className="group block">
         <div className="bg-card rounded-xl overflow-hidden shadow-card hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-muted">
             <img
-              src={product.images[0]}
+              src={getImageUrl(product.images?.[0])}
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -77,7 +85,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
                   -{discount}%
                 </Badge>
               )}
-              {product.tags?.includes('organic') && (
+              {product.category?.toLowerCase() === 'organic' && (
                 <Badge variant="secondary" className="bg-leaf-light text-primary">
                   Organic
                 </Badge>
@@ -111,10 +119,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
               <Button
                 className="w-full bg-primary hover:bg-primary-dark text-primary-foreground shadow-lg"
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={product.stock === 0}
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
               </Button>
             </div>
           </div>
@@ -122,7 +130,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
           {/* Content */}
           <div className="p-4">
             {/* Vendor */}
-            <p className="text-xs text-muted-foreground mb-1">{product.vendorName}</p>
+            <p className="text-xs text-muted-foreground mb-1">{product.farmer?.name || 'Villagio'}</p>
             
             {/* Name */}
             <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem]">
@@ -132,9 +140,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
             {/* Rating */}
             <div className="flex items-center gap-1 mt-2">
               <Star className="h-4 w-4 fill-orange text-orange" />
-              <span className="text-sm font-medium">{product.rating}</span>
+              <span className="text-sm font-medium">{product.rating || 5.0}</span>
               <span className="text-xs text-muted-foreground">
-                ({product.reviewCount})
+                ({product.reviewCount || 0})
               </span>
             </div>
 
@@ -149,7 +157,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
                 </span>
               )}
               <span className="text-xs text-muted-foreground">
-                {product.unit}
+                /{product.unit || 'unit'}
               </span>
             </div>
           </div>
